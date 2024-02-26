@@ -17,13 +17,14 @@ DIV : '/';
 
 CLASS : 'class' ;
 INT : 'int' ;
-BOOLEAN : 'boolean';
 PUBLIC : 'public' ;
 RETURN : 'return' ;
 
-INTEGER : [0] | ([1-9][0-9]*) ;
+INTEGER : [0-9]+ ;
 ID : [a-zA-Z_$]([a-zA-Z0-9_$])* ;
 
+ENDOFLINE_COMMENT : '//' .*? '\n' -> skip ;
+MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
 WS : [ \t\n\r\f]+ -> skip ;
 
 program
@@ -62,10 +63,11 @@ stmt
     ;
 
 expr
-    : expr op= MUL expr #BinaryExpr //
-    | expr op= ADD expr #BinaryExpr //
-    | value=INTEGER #IntegerLiteral //
-    | name=ID #VarRefExpr //
+    : expr op=(ADD | SUB | MUL | DIV) expr #BinaryExpr
+    | expr op= ADD expr #BinaryExpr
+    | value=INTEGER #IntegerLiteral
+    | value=('true' | 'false') expr #BooleanLiteral
+    | name=ID #VarRefExpr
     ;
 
 
