@@ -29,8 +29,12 @@ WS : [ \t\n\r\f]+ -> skip ;
 
 program
     : classDecl EOF
+    | (importDecl)* classDecl EOF
     ;
 
+importDecl
+    : 'import' value+=ID ('.' value+=ID)* ';'
+    ;
 
 classDecl
     : CLASS name=ID
