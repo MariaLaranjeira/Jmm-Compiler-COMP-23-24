@@ -12,14 +12,17 @@ LPAREN : '(' ;
 RPAREN : ')' ;
 MUL : '*' ;
 ADD : '+' ;
+SUB : '-';
+DIV : '/';
 
 CLASS : 'class' ;
 INT : 'int' ;
+BOOLEAN : 'boolean';
 PUBLIC : 'public' ;
 RETURN : 'return' ;
 
-INTEGER : [0-9] ;
-ID : [a-zA-Z]+ ;
+INTEGER : [0] | ([1-9][0-9]*) ;
+ID : [a-zA-Z_$]([a-zA-Z0-9_$])* ;
 
 WS : [ \t\n\r\f]+ -> skip ;
 
