@@ -4,31 +4,14 @@ grammar Javamm;
     package pt.up.fe.comp2024;
 }
 
-EQUALS : '=';
-SEMI : ';' ;
-LCURLY : '{' ;
-RCURLY : '}' ;
-LPAREN : '(' ;
-RPAREN : ')' ;
-MUL : '*' ;
-ADD : '+' ;
-SUB : '-';
-DIV : '/';
-
-CLASS : 'class' ;
-INT : 'int' ;
-PUBLIC : 'public' ;
-RETURN : 'return' ;
-
 INTEGER : [0-9]+ ;
 ID : [a-zA-Z_$]([a-zA-Z0-9_$])* ;
-
 ENDOFLINE_COMMENT : '//' .*? '\n' -> skip ;
 MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
 WS : [ \t\n\r\f]+ -> skip ;
 
 program
-    : classDecl EOF
+    : stmt + EOF
     | (importDecl)* classDecl EOF
     ;
 
@@ -37,24 +20,23 @@ importDecl
     ;
 
 classDecl
-    : CLASS name=ID
-        LCURLY
-        methodDecl*
-        RCURLY
+    : 'class' ID ('extends' ID)? '{' (varDecl)* (methodDecl)* '}'
     ;
 
 varDecl
-    : type name=ID SEMI
+    : type name=ID ';'
     ;
 
 type
-    : name= INT ;
+    : type '[' ']'
+    | value = 'boolean'
+    | value = 'int'
+    | value = ID
+    ;
 
-methodDecl locals[boolean isPublic=false]
-    : (PUBLIC {$isPublic=true;})?
-        type name=ID
-        LPAREN param RPAREN
-        LCURLY varDecl* stmt* RCURLY
+methodDecl
+    : ('public')? type ID '(' (type ID (';' type ID)*)? ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}'
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' ID ')' '{' (varDecl)* (stmt)* '}'
     ;
 
 param
@@ -62,16 +44,30 @@ param
     ;
 
 stmt
-    : expr EQUALS expr SEMI #AssignStmt //
-    | RETURN expr SEMI #ReturnStmt
+    : '{' ( stmt )* '}'
+    | 'if' '(' expr ')' stmt 'else' stmt
+    | 'while' '(' expr ')' stmt
+    | expr ';'
+    | var=ID '=' expr ';'
+    | var=ID '[' expr ']' '=' expr ';'
     ;
 
 expr
-    : expr op=(ADD | SUB | MUL | DIV) expr #BinaryExpr
-    | expr op= ADD expr #BinaryExpr
-    | value=INTEGER #IntegerLiteral
-    | value=('true' | 'false') expr #BooleanLiteral
-    | name=ID #VarRefExpr
+    : expr op = ('&&' | '<' | '+' | '-' | '*' | '/') expr #BinaryOp
+    | expr '[' expr ']' #ArrayAccess
+    | expr '.' 'length' #Length
+    | expr '.' value=ID '(' (expr (',' expr) *)? ')' #FunctionCall
+    | 'new' 'int' '[' expr ']' #NewIntArray
+    | 'new' ID '(' ')' #NewObject
+    | value = '!' expr #NotExpr
+    | '(' expr ')' #ParenExpr
+    | '[' ( expr ( ',' expr )* )? ']' #ArrayLiteral
+    | value = ('true' | 'false') expr #BooleanLiteral
+    | name = ID #VarRefExpr
+    | value = 'this' #ThisExpr
+    | value = INTEGER #IntegerLiteral
+    | value = ('true' | 'false') expr #BooleanLiteral
+    | name = ID #VarRefExpr
     ;
 
 
