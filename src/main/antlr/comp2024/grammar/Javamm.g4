@@ -26,7 +26,6 @@ classDecl
 
 type
     : type '[' ']'
-    | type '...'
     | value = 'boolean'
     | value = 'int'
     | value = ID
@@ -65,19 +64,22 @@ stmt
     ;
 
 expr
-    : expr op = ('&&' | '<' | '+' | '-' | '*' | '/') expr #BinaryOp
-    | expr '[' expr ']' #ArrayAccess
-    | expr '.' 'length' #Length
-    | expr '.' value=ID '(' (expr (',' expr) *)? ')' #FunctionCall
-    | 'new' 'int' '[' expr ']' #NewIntArray
-    | 'new' ID '(' ')' #NewObject
-    | value = '!' expr #NotExpr
-    | '(' expr ')' #ParenExpr
-    | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
+    : value = '!' expr #NotExpr
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
-    | name = ID #VarRefExpr
     | value = 'this' #ThisExpr
+    | name = ID #VarRefExpr
+    | '(' expr ')' #ParenExpr
+    | 'new' 'int' '[' expr ']' #NewArray
+    | 'new' ID '(' ')' #NewObject
+    | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
+    | expr '[' expr ']' #ArrayAccess
+    | expr '.' 'length' #Length
+    | expr '.' value=ID '(' (expr (',' expr)*)? ')' #FunctionCall
+    | expr op = ('*' | '/') expr #BinaryOp
+    | expr op = ('+' | '-') expr #BinaryOp
+    | expr op = ('<' | '>') expr #BinaryOp
+    | expr op = '&&' expr #BinaryOp
     ;
 
 

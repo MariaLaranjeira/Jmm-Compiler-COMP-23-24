@@ -58,12 +58,33 @@ public class GrammarTest {
         TestUtils.parseVerbose("static void main(String[] args) {}", MAIN_METHOD);
     }
 
+    @Test
+    public void testSimpleJavaProgram_1_4() {
+        TestUtils.parseVerbose("import io;\n" +
+                        "class Factorial {\n" +
+                        "public int computeFactorial(int num){\n" +
+                        "int num_aux ;\n" +
+                        "if (num < 1)\n" +
+                        "num_aux = 1;\n" +
+                        "else\n" +
+                        "num_aux = num * (this.computeFactorial(num-1));\n" +
+                        "return num_aux;\n" +
+                        "}\n" +
+                        "public static void main(String[] args){\n" +
+                        "io.println(new Factorial().computeFactorial(10)); //assuming the existence\n" +
+                        "// of the classfile io.class\n" +
+                        "}\n" +
+                        "}",
+                MAIN_METHOD);
+    }
     //not
     @Test
     public void testInstanceMethodEmpty() {
         TestUtils.parseVerbose("int foo(int anInt, int[] anArray, boolean aBool, String aString) {return a;}",
                 INSTANCE_METHOD);
     }
+
+
 
     @Test
     public void testInstanceMethodVarargs() {
