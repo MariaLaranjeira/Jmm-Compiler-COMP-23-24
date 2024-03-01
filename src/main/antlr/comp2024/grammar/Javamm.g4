@@ -17,18 +17,18 @@ program
     ;
 
 importDecl
-    : 'import' value+=ID ('.' value+=ID)* ';'
+    : 'import' value+=ID ('.' value+=ID)* ';' #ImportStmt
     ;
 
 classDecl
-    : 'class' ID ('extends' ID)? '{' (varDecl)* (methodDecl)* '}'
+    : 'class' ID ('extends' ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
     ;
 
 type
-    : type '[' ']'
-    | value = 'boolean'
-    | value = 'int'
-    | value = ID
+    : type '[' ']' #ArrayType
+    | value = 'boolean' #BooleanType
+    | value = 'int' #IntegerType
+    | value = ID #IdType
     ;
 
 varDecl
@@ -55,12 +55,12 @@ methodDecl
     ;
 
 stmt
-    : '{' ( stmt )* '}'
-    | 'if' '(' expr ')' stmt 'else' stmt
-    | 'while' '(' expr ')' stmt
-    | expr ';'
-    | var = ID '=' expr ';'
-    | var = ID '[' expr ']' '=' expr ';'
+    : '{' ( stmt )* '}' #BracketsStmt
+    | 'if' '(' expr ')' stmt 'else' stmt #IfStmt
+    | 'while' '(' expr ')' stmt #WhileStmt
+    | expr ';' #ExprStmt
+    | var = ID '=' expr ';' #AssignStmt
+    | var = ID '[' expr ']' '=' expr ';' #ArrayAssignStmt
     ;
 
 expr
