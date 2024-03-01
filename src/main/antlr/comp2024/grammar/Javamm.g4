@@ -28,20 +28,21 @@ varDecl
     : type name=ID ';'
     ;
 
+param
+    : type name=ID
+    ;
+
 type
     : type '[' ']'
+    | type '...'
     | value = 'boolean'
     | value = 'int'
     | value = ID
     ;
 
 methodDecl
-    : ('public')? type ID '(' (type ID (';' type ID)*)? ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}'
+    : ('public')? type ID '(' (type ID (',' type ID)*)? ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}'
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' ID ')' '{' (varDecl)* (stmt)* '}'
-    ;
-
-param
-    : type name=ID
     ;
 
 stmt
@@ -63,11 +64,10 @@ expr
     | value = '!' expr #NotExpr
     | '(' expr ')' #ParenExpr
     | '[' ( expr ( ',' expr )* )? ']' #ArrayLiteral
+    | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
     | name = ID #VarRefExpr
     | value = 'this' #ThisExpr
-    | value = INTEGER #IntegerLiteral
-    | name = ID #VarRefExpr
     ;
 
 

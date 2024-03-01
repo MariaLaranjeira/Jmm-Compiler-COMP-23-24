@@ -65,7 +65,6 @@ public class GrammarTest {
                 INSTANCE_METHOD);
     }
 
-    //not
     @Test
     public void testInstanceMethodVarargs() {
         TestUtils.parseVerbose("int foo(int... ints) {return 0;}",
