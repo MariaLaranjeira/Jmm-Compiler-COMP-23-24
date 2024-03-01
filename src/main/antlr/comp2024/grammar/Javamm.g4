@@ -24,14 +24,6 @@ classDecl
     : 'class' ID ('extends' ID)? '{' (varDecl)* (methodDecl)* '}'
     ;
 
-varDecl
-    : type name=ID ';'
-    ;
-
-param
-    : type name=ID
-    ;
-
 type
     : type '[' ']'
     | type '...'
@@ -40,8 +32,26 @@ type
     | value = ID
     ;
 
+varDecl
+    : type name=ID ';'
+    ;
+
+param
+    : type name=ID
+    ;
+
+params
+    : param (',' param)* (',' varargsParam)?
+    | varargsParam
+    |
+    ;
+
+varargsParam
+    : type '...' name=ID
+    ;
+
 methodDecl
-    : ('public')? type ID '(' (type ID (',' type ID)*)? ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}'
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}'
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' ID ')' '{' (varDecl)* (stmt)* '}'
     ;
 
@@ -63,7 +73,7 @@ expr
     | 'new' ID '(' ')' #NewObject
     | value = '!' expr #NotExpr
     | '(' expr ')' #ParenExpr
-    | '[' ( expr ( ',' expr )* )? ']' #ArrayLiteral
+    | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
     | name = ID #VarRefExpr
