@@ -4,7 +4,7 @@ grammar Javamm;
     package pt.up.fe.comp2024;
 }
 
-INTEGER : [0-9]+ ;
+INTEGER : [0] | ([1-9][0-9]*);
 ID : [a-zA-Z_$]([a-zA-Z0-9_$])* ;
 
 ENDOFLINE_COMMENT : '//' .*? '\n' -> skip ;
@@ -42,7 +42,7 @@ param
 params
     : param (',' param)* (',' varargsParam)?
     | varargsParam
-    |
+    | //empty
     ;
 
 varargsParam
@@ -54,9 +54,10 @@ methodDecl
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' ID ')' '{' (varDecl)* (stmt)* '}'
     ;
 
+
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
-    | 'if' '(' expr ')' stmt 'else' stmt #IfStmt
+    | 'if' '(' expr ')' stmt ('else if' '(' expr ')' stmt)* ('else' stmt)?  #IfStmt
     | 'while' '(' expr ')' stmt #WhileStmt
     | expr ';' #ExprStmt
     | var = ID '=' expr ';' #AssignStmt
@@ -71,15 +72,16 @@ expr
     | name = ID #VarRefExpr
     | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
-    | 'new' ID '(' ')' #NewObject
+    | 'new' ID '(' (expr (',' expr) *)? ')' #NewObject
     | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
     | expr '[' expr ']' #ArrayAccess
     | expr '.' 'length' #Length
     | expr '.' value=ID '(' (expr (',' expr)*)? ')' #FunctionCall
     | expr op = ('*' | '/') expr #BinaryOp
     | expr op = ('+' | '-') expr #BinaryOp
-    | expr op = ('<' | '>') expr #BinaryOp
-    | expr op = '&&' expr #BinaryOp
+    | expr op = ('<' | '>' | '==') expr #BinaryOp
+    | expr op=('!=' | '+=' | '<=' | '>=' | '-=' | '*=' | '/=') expr #BinaryOp
+    | expr op = ('&&' | '||') expr #BinaryOp
     ;
 
 
