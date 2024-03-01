@@ -6,6 +6,7 @@ grammar Javamm;
 
 INTEGER : [0-9]+ ;
 ID : [a-zA-Z_$]([a-zA-Z0-9_$])* ;
+
 ENDOFLINE_COMMENT : '//' .*? '\n' -> skip ;
 MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
 WS : [ \t\n\r\f]+ -> skip ;
@@ -48,8 +49,8 @@ stmt
     | 'if' '(' expr ')' stmt 'else' stmt
     | 'while' '(' expr ')' stmt
     | expr ';'
-    | var=ID '=' expr ';'
-    | var=ID '[' expr ']' '=' expr ';'
+    | var = ID '=' expr ';'
+    | var = ID '[' expr ']' '=' expr ';'
     ;
 
 expr
@@ -62,11 +63,10 @@ expr
     | value = '!' expr #NotExpr
     | '(' expr ')' #ParenExpr
     | '[' ( expr ( ',' expr )* )? ']' #ArrayLiteral
-    | value = ('true' | 'false') expr #BooleanLiteral
+    | value = ('true' | 'false') #BooleanLiteral
     | name = ID #VarRefExpr
     | value = 'this' #ThisExpr
     | value = INTEGER #IntegerLiteral
-    | value = ('true' | 'false') expr #BooleanLiteral
     | name = ID #VarRefExpr
     ;
 

@@ -20,9 +20,9 @@ public class GrammarTest {
 
 
     // TODO: Set name of imports grammar rule
-    private static final String IMPORT = "CHANGE ME! - name of import grammar rule";
+    private static final String IMPORT = "importDecl";
     // TODO: Set name of main method grammar rule
-    private static final String MAIN_METHOD = "CHANGE ME! - name of main method grammar rule";
+    private static final String MAIN_METHOD = "program";
     private static final String INSTANCE_METHOD = "methodDecl";
     private static final String STATEMENT = "stmt";
     private static final String EXPRESSION = "expr";
@@ -52,17 +52,20 @@ public class GrammarTest {
         TestUtils.parseVerbose("String aString;", "VarDecl");
     }*/
 
+    //not
     @Test
     public void testMainMethodEmpty() {
         TestUtils.parseVerbose("static void main(String[] args) {}", MAIN_METHOD);
     }
 
+    //not
     @Test
     public void testInstanceMethodEmpty() {
         TestUtils.parseVerbose("int foo(int anInt, int[] anArray, boolean aBool, String aString) {return a;}",
                 INSTANCE_METHOD);
     }
 
+    //not
     @Test
     public void testInstanceMethodVarargs() {
         TestUtils.parseVerbose("int foo(int... ints) {return 0;}",
