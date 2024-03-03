@@ -21,7 +21,7 @@ importDecl
     ;
 
 classDecl
-    : 'class' ID ('extends' ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
+    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
     ;
 
 type
