@@ -28,6 +28,9 @@ type
     : type '[' ']' #ArrayType
     | value = 'boolean' #BooleanType
     | value = 'int' #IntegerType
+    | value = 'float' #FloatType
+    | value = 'double' #DoubleType
+    | value = 'String' #StringType
     | value = ID #IdType
     ;
 
