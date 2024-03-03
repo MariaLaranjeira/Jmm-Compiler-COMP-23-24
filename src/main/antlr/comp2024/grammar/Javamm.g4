@@ -32,7 +32,7 @@ type
     ;
 
 varDecl
-    : type name=ID ';'
+    : type name=ID ';' #VarStmt
     ;
 
 param
@@ -50,8 +50,8 @@ varargsParam
     ;
 
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}'
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' ID ')' '{' (varDecl)* (stmt)* '}'
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
     ;
 
 
