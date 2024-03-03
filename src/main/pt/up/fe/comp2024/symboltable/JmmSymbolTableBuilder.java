@@ -66,28 +66,25 @@ public class JmmSymbolTableBuilder {
     }
 
     private static Map<String, List<Symbol>> buildLocals(JmmNode classDecl) {
-        // TODO: Simple implementation that needs to be expanded
 
-        Map<String, List<Symbol>> map = new HashMap<>();
+        var methods = classDecl.getChildren(METHOD_DECL);
+        var result = new HashMap<String, List<Symbol>>();
+        for (var method : methods) {
+            var locals = getLocalsList(method);
+            var name = method.get("name");
+            result.put(name, locals);
+        }
 
-
-        classDecl.getChildren(METHOD_DECL).stream()
-                .forEach(method -> map.put(method.get("name"), getLocalsList(method)));
-
-        return map;
+        return result;
     }
 
     private static List<Symbol> buildFields(JmmNode classDecl) {
 
-        var types = classDecl.getChildren(VAR_DECL);
-
-        var names = classDecl.getChildren(VAR_DECL).stream()
-                .map(node -> node.get("name"))
-                .toList();
+        var vars = classDecl.getChildren(VAR_DECL);
 
         List<Symbol> symbols = new ArrayList<>();
-        for (int i = 0; i < names.size(); i++) {
-            symbols.add(new Symbol(new Type(types.get(i).getChildren().get(0).get("value"),false), names.get(i)));
+        for (var field : vars) {
+            symbols.add(new Symbol(new Type(field.getChildren().get(0).get("value"),false), field.get("name")));
         }
 
         return symbols;
@@ -103,13 +100,15 @@ public class JmmSymbolTableBuilder {
 
 
     private static List<Symbol> getLocalsList(JmmNode methodDecl) {
-        // TODO: Simple implementation that needs to be expanded
 
-        var intType = new Type(TypeUtils.getIntTypeName(), false);
+        var locals = methodDecl.getChildren(VAR_DECL);
 
-        return methodDecl.getChildren(VAR_DECL).stream()
-                .map(varDecl -> new Symbol(intType, varDecl.get("name")))
-                .toList();
+        List<Symbol> symbols = new ArrayList<>();
+        for (var local : locals) {
+            symbols.add(new Symbol(new Type(local.getChildren().get(0).get("value"),false), local.get("name")));
+        }
+
+        return symbols;
+
     }
-
 }

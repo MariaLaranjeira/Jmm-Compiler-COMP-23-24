@@ -1,4 +1,3 @@
-
 class Parameters{
 
 	public int all(int a, boolean b, Parameters maf){
