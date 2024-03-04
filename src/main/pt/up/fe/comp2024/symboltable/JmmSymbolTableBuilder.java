@@ -58,7 +58,7 @@ public class JmmSymbolTableBuilder {
         var result = new HashMap<String, List<Symbol>>();
 
         for (var method : methods) {
-            var params = method.getChildren(PARAM);
+            var params = method.getChildren("Params").get(0).getChildren(PARAM);
             var name = method.get("name");
             if(params.isEmpty()) {
                 result.put(name, Collections.emptyList());
