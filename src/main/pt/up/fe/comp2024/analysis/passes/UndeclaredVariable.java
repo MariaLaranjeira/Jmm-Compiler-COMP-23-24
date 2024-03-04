@@ -25,7 +25,11 @@ public class UndeclaredVariable extends AnalysisVisitor {
     }
 
     private Void visitMethodDecl(JmmNode method, SymbolTable table) {
-        currentMethod = method.get("name");
+        if (method.getAttributes().contains("name")) {
+            currentMethod = method.get("name");
+        } else {
+            currentMethod = "main";
+        }
         return null;
     }
 

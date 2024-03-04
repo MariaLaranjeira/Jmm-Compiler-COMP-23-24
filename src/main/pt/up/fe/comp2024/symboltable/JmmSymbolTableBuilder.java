@@ -45,7 +45,14 @@ public class JmmSymbolTableBuilder {
         var result = new HashMap<String, Type>();
         var methods = classDecl.getChildren(METHOD_DECL);
         for (var method : methods) {
+
+            // If method is main
+            if (!method.getAttributes().contains("name")){
+                result.put("main", new Type("static void", false));
+                continue;
+            }
             result.put(method.get("name"), filterType(method));
+
         }
         return result;
 
@@ -57,18 +64,32 @@ public class JmmSymbolTableBuilder {
         var result = new HashMap<String, List<Symbol>>();
 
         for (var method : methods) {
-            var params = method.getChildren("Params").get(0).getChildren(PARAM);
-            var name = method.get("name");
-            if(params.isEmpty()) {
-                result.put(name, Collections.emptyList());
+
+            // If method is main
+            if (!method.getAttributes().contains("name")) {
+                List<Symbol> mainSymbols = new ArrayList<>();
+                mainSymbols.add(new Symbol(new Type("String",true),method.get("args")));
+                result.put("main", mainSymbols);
+
             }
             else {
-                List<Symbol> symbols = new ArrayList<>();
-                for (var param : params) {
-                    symbols.add(new Symbol(filterType(param), param.get("name")));
+                var params = method.getChildren("Params").get(0).getChildren(PARAM);
+                var name = method.get("name");
+
+                // If method has no parameters
+                if(params.isEmpty()) {
+                    result.put(name, Collections.emptyList());
                 }
-                result.put(name, symbols);
+                else {
+                    List<Symbol> symbols = new ArrayList<>();
+                    for (var param : params) {
+                        symbols.add(new Symbol(filterType(param), param.get("name")));
+                    }
+                    result.put(name, symbols);
+                }
             }
+
+
         }
         return result;
 
@@ -80,8 +101,15 @@ public class JmmSymbolTableBuilder {
         var result = new HashMap<String, List<Symbol>>();
         for (var method : methods) {
             var locals = getLocalsList(method);
-            var name = method.get("name");
-            result.put(name, locals);
+
+            if (method.getAttributes().contains("name")) {
+                result.put(method.get("name"), locals);
+            }
+            else {
+                // If method is main
+                result.put("main", locals);
+            }
+
         }
 
         return result;
@@ -101,10 +129,19 @@ public class JmmSymbolTableBuilder {
 
     private static List<String> buildMethods(JmmNode classDecl) {
 
-        return classDecl.getChildren(METHOD_DECL).stream()
-                 .filter(method -> method.getAttributes().contains("name")) // out methods without a name
-                 .map(method -> method.get("name"))
-                 .toList();
+        var methods = classDecl.getChildren(METHOD_DECL);
+        var result = new ArrayList<String>();
+
+        for (var method : methods) {
+            if (method.getAttributes().contains("name")) {
+                result.add(method.get("name"));
+            }
+            else {
+                // If method is main
+                result.add("main");
+            }
+        }
+        return result;
     }
 
 
