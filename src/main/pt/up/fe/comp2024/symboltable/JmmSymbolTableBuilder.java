@@ -9,8 +9,7 @@ import pt.up.fe.specs.util.SpecsCheck;
 
 import java.util.*;
 
-import static pt.up.fe.comp2024.ast.Kind.METHOD_DECL;
-import static pt.up.fe.comp2024.ast.Kind.VAR_DECL;
+import static pt.up.fe.comp2024.ast.Kind.*;
 
 public class JmmSymbolTableBuilder {
 
@@ -42,27 +41,38 @@ public class JmmSymbolTableBuilder {
     }
 
     private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
-        // TODO: Simple implementation that needs to be expanded
 
-        Map<String, Type> map = new HashMap<>();
+        var result = new HashMap<String, Type>();
+        var methods = classDecl.getChildren(METHOD_DECL);
+        for (var method : methods) {
+            var returnType = method.getChildren().get(0).get("value");
+            result.put(method.get("name"), new Type(returnType, false));
+        }
+        return result;
 
-        classDecl.getChildren(METHOD_DECL).stream()
-                .forEach(method -> map.put(method.get("name"), new Type(TypeUtils.getIntTypeName(), false)));
-
-        return map;
     }
 
     private static Map<String, List<Symbol>> buildParams(JmmNode classDecl) {
-        // TODO: Simple implementation that needs to be expanded
 
-        Map<String, List<Symbol>> map = new HashMap<>();
+        var methods = classDecl.getChildren(METHOD_DECL);
+        var result = new HashMap<String, List<Symbol>>();
 
-        var intType = new Type(TypeUtils.getIntTypeName(), false);
+        for (var method : methods) {
+            var params = method.getChildren(PARAM);
+            var name = method.get("name");
+            if(params.isEmpty()) {
+                result.put(name, Collections.emptyList());
+            }
+            else {
+                List<Symbol> symbols = new ArrayList<>();
+                for (var param : params) {
+                    symbols.add(new Symbol(new Type(param.getChildren().get(0).get("value"),false), param.get("name")));
+                }
+                result.put(name, symbols);
+            }
+        }
+        return result;
 
-        classDecl.getChildren(METHOD_DECL).stream()
-                .forEach(method -> map.put(method.get("name"), Arrays.asList(new Symbol(intType, method.getJmmChild(1).get("name")))));
-
-        return map;
     }
 
     private static Map<String, List<Symbol>> buildLocals(JmmNode classDecl) {
@@ -102,6 +112,10 @@ public class JmmSymbolTableBuilder {
     private static List<Symbol> getLocalsList(JmmNode methodDecl) {
 
         var locals = methodDecl.getChildren(VAR_DECL);
+
+        if (locals.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         List<Symbol> symbols = new ArrayList<>();
         for (var local : locals) {
