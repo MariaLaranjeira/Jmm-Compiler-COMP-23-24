@@ -45,8 +45,7 @@ public class JmmSymbolTableBuilder {
         var result = new HashMap<String, Type>();
         var methods = classDecl.getChildren(METHOD_DECL);
         for (var method : methods) {
-            var returnType = method.getChildren().get(0).get("value");
-            result.put(method.get("name"), new Type(returnType, false));
+            result.put(method.get("name"), filterType(method));
         }
         return result;
 
@@ -66,7 +65,7 @@ public class JmmSymbolTableBuilder {
             else {
                 List<Symbol> symbols = new ArrayList<>();
                 for (var param : params) {
-                    symbols.add(new Symbol(new Type(param.getChildren().get(0).get("value"),false), param.get("name")));
+                    symbols.add(new Symbol(filterType(param), param.get("name")));
                 }
                 result.put(name, symbols);
             }
@@ -94,7 +93,7 @@ public class JmmSymbolTableBuilder {
 
         List<Symbol> symbols = new ArrayList<>();
         for (var field : vars) {
-            symbols.add(new Symbol(new Type(field.getChildren().get(0).get("value"),false), field.get("name")));
+            symbols.add(new Symbol(filterType(field), field.get("name")));
         }
 
         return symbols;
@@ -119,10 +118,20 @@ public class JmmSymbolTableBuilder {
 
         List<Symbol> symbols = new ArrayList<>();
         for (var local : locals) {
-            symbols.add(new Symbol(new Type(local.getChildren().get(0).get("value"),false), local.get("name")));
+            symbols.add(new Symbol(filterType(local), local.get("name")));
         }
 
         return symbols;
 
+    }
+
+    private static Type filterType(JmmNode node) {
+        var aux = node.getChildren().get(0);
+        if (aux.getKind().equals("ArrayType")) {
+            return new Type(aux.getChildren().get(0).get("value"), true);
+        }
+        else {
+            return new Type(aux.get("value"), false);
+        }
     }
 }
