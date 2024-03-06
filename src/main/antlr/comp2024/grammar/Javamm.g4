@@ -53,8 +53,8 @@ varargsParam
     ;
 
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
+    : ('public')? type name=ID '(' params ')' '{' (varDecl | stmt)* 'return' expr ';' '}' #MethodStmt
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl | stmt)* '}' #MethodStmt
     ;
 
 
@@ -62,6 +62,7 @@ stmt
     : '{' ( stmt )* '}' #BracketsStmt
     | 'if' '(' expr ')' stmt ('else if' '(' expr ')' stmt)* ('else' stmt)?  #IfStmt
     | 'while' '(' expr ')' stmt #WhileStmt
+    | 'for' '(' stmt expr';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
     | var = ID '=' expr ';' #AssignStmt
     | var = ID '[' expr ']' '=' expr ';' #ArrayAssignStmt
