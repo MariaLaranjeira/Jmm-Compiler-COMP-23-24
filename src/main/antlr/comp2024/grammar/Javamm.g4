@@ -53,14 +53,14 @@ varargsParam
     ;
 
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl | stmt)* 'return' expr ';' '}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl | stmt)* '}' #MethodStmt
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
     ;
 
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
-    | ifStmt (elseIfStmt)* (elseStmt)? #ConditionalStmt
+    | ifStmt (elseIfStmt)* (elseStmt) #ConditionalStmt
     | 'while' '(' expr ')' stmt #WhileStmt
     | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
