@@ -4,8 +4,6 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2024.ast.Kind;
-import pt.up.fe.comp2024.ast.TypeUtils;
-import pt.up.fe.specs.util.SpecsCheck;
 
 import java.util.*;
 
@@ -18,7 +16,6 @@ public class JmmSymbolTableBuilder {
 
         var classDecl = root.getChildren(Kind.CLASS_DECL).get(0);
 
-        //SpecsCheck.checkArgument(Kind.CLASS_DECL.check(classDecl), () -> "Expected a class declaration: " + classDecl);
         String className = classDecl.get("name");
 
         String supers = null;
@@ -149,6 +146,7 @@ public class JmmSymbolTableBuilder {
 
         var locals = methodDecl.getChildren(VAR_DECL);
 
+        // If method has no local variables
         if (locals.isEmpty()) {
             return Collections.emptyList();
         }
