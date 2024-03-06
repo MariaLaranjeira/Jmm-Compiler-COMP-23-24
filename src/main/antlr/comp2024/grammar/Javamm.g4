@@ -60,12 +60,24 @@ methodDecl
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
-    | 'if' '(' expr ')' stmt ('else if' '(' expr ')' stmt)* ('else' stmt)?  #IfStmt
+    | ifStmt (elseIfStmt)* (elseStmt)? #ConditionalStmt
     | 'while' '(' expr ')' stmt #WhileStmt
-    | 'for' '(' stmt expr';' expr ')' stmt #ForStmt
+    | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
     | var = ID '=' expr ';' #AssignStmt
     | var = ID '[' expr ']' '=' expr ';' #ArrayAssignStmt
+    ;
+
+ifStmt
+    : 'if' '(' expr ')' stmt
+    ;
+
+elseIfStmt
+    : 'else if' '(' expr ')' stmt
+    ;
+
+elseStmt
+    : 'else' stmt
     ;
 
 expr
