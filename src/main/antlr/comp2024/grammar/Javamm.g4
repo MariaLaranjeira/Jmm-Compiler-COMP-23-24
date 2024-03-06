@@ -20,12 +20,16 @@ importDecl
     ;
 
 classDecl
-    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
+    : 'class' name=ID ('extends' extend=ID)? '{' mainFieldDecl? (varDecl)* (methodDecl)* '}' #ClassStmt
+    ;
+
+mainFieldDecl
+    : type 'main' ';' #MainFieldStmt
     ;
 
 methodDecl
     : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
-    | ('public')? 'static' 'void' name='main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
     ;
 
 type
