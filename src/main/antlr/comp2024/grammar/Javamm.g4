@@ -20,11 +20,7 @@ importDecl
     ;
 
 classDecl
-    : 'class' name=ID ('extends' extend=ID)? '{' (mainFieldDecl)? (varDecl)* (methodDecl)* '}' #ClassStmt
-    ;
-
-mainFieldDecl
-    : type 'main' ';' #MainFieldStmt
+    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
     ;
 
 methodDecl
