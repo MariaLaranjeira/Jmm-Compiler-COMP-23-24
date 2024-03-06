@@ -20,16 +20,16 @@ importDecl
     ;
 
 classDecl
-    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (mainMethodDecl)? (methodDecl)* '}' #ClassStmt
+    : 'class' name=ID ('extends' extend=ID)? '{' (mainFieldDecl)? (varDecl)* (methodDecl)* '}' #ClassStmt
     ;
 
-mainMethodDecl
-    : ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
+mainFieldDecl
+    : type 'main' ';' #MainFieldStmt
     ;
 
 methodDecl
     : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
+    | ('public')? 'static' 'void' name='main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
     ;
 
 type
@@ -39,6 +39,7 @@ type
     | value = 'float' #FloatType
     | value = 'double' #DoubleType
     | value = 'String' #StringType
+    | value = 'void' #VoidType
     | value = ID #IdType
     ;
 
