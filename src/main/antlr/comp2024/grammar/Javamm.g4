@@ -12,8 +12,7 @@ MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
 WS : [ \t\n\r\f]+ -> skip ;
 
 program
-    : stmt + EOF
-    | (importDecl)* classDecl EOF
+    : (importDecl)* classDecl EOF
     ;
 
 importDecl
@@ -21,7 +20,16 @@ importDecl
     ;
 
 classDecl
-    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
+    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (mainMethodDecl)? (methodDecl)* '}' #ClassStmt
+    ;
+
+mainMethodDecl
+    : ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
+    ;
+
+methodDecl
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
     ;
 
 type
@@ -50,11 +58,6 @@ params
 
 varargsParam
     : type '...' name=ID
-    ;
-
-methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
     ;
 
 
