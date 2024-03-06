@@ -12,8 +12,7 @@ MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
 WS : [ \t\n\r\f]+ -> skip ;
 
 program
-    : stmt + EOF
-    | (importDecl)* classDecl EOF
+    : (importDecl)* classDecl EOF
     ;
 
 importDecl
@@ -21,7 +20,16 @@ importDecl
     ;
 
 classDecl
-    : 'class' name=ID ('extends' extend=ID)? '{' (varDecl)* (methodDecl)* '}' #ClassStmt
+    : 'class' name=ID ('extends' extend=ID)? '{' mainFieldDecl? (varDecl)* (methodDecl)* '}' #ClassStmt
+    ;
+
+mainFieldDecl
+    : type 'main' ';' #MainFieldStmt
+    ;
+
+methodDecl
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
     ;
 
 type
@@ -31,6 +39,7 @@ type
     | value = 'float' #FloatType
     | value = 'double' #DoubleType
     | value = 'String' #StringType
+    | value = 'void' #VoidType
     | value = ID #IdType
     ;
 
@@ -52,19 +61,27 @@ varargsParam
     : type '...' name=ID
     ;
 
-methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MethodStmt
-    ;
-
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
-    | 'if' '(' expr ')' stmt ('else if' '(' expr ')' stmt)* ('else' stmt)?  #IfStmt
+    | ifStmt (elseIfStmt)* (elseStmt) #ConditionalStmt
     | 'while' '(' expr ')' stmt #WhileStmt
+    | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
     | var = ID '=' expr ';' #AssignStmt
     | var = ID '[' expr ']' '=' expr ';' #ArrayAssignStmt
+    ;
+
+ifStmt
+    : 'if' '(' expr ')' stmt
+    ;
+
+elseIfStmt
+    : 'else if' '(' expr ')' stmt
+    ;
+
+elseStmt
+    : 'else' stmt
     ;
 
 expr
