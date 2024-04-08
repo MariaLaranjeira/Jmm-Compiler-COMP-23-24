@@ -11,13 +11,29 @@ public enum Kind {
     CLASS_DECL,
     VAR_DECL,
     TYPE,
-    METHOD_DECL,
     PARAM,
     ASSIGN_STMT,
     RETURN_STMT,
+
     BINARY_EXPR,
-    INTEGER_LITERAL,
-    VAR_REF_EXPR;
+    VAR_REF_EXPR,
+
+
+    LENGTH,
+    NEGATION,
+    OBJECT,
+    ARRAY_DECLARATION,
+    METHOD_DECL,
+    NEW_CLASS,
+    FUNCTION_CALL,
+    ARRAY_ACCESS,
+    PARENTESIS,
+
+
+    BOOLEAN_LITERAL,
+    INTEGER_LITERAL;
+
+
 
 
     private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT);
