@@ -51,7 +51,6 @@ public class JasminTest {
 
             result = TestUtils.backend(ollirResult);
         }
-
         
         var testName = new File(resource).getName();
         System.out.println(testName + ":\n" + result.getJasminCode());
