@@ -1,12 +1,14 @@
 package pt.up.fe.comp2024.analysis.passes;
 
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
+import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.Stage;
 import pt.up.fe.comp2024.analysis.AnalysisVisitor;
 import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
+import pt.up.fe.comp2024.ast.TypeUtils;
 import pt.up.fe.specs.util.SpecsCheck;
 
 /**
@@ -20,8 +22,15 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
     @Override
     public void buildVisitor() {
+        //Declaration and reference Checks
         addVisit(Kind.METHOD_DECL, this::visitMethodDecl);
         addVisit(Kind.VAR_REF_EXPR, this::visitVarRefExpr);
+
+        addVisit(Kind.BINARY_OP, this::visitBinaryOp);
+        addVisit(Kind.ASSIGN_STMT, this::visitAssign);
+
+        addVisit(Kind.IF_STMT, this::visitIfStmt);
+        addVisit(Kind.WHILE_STMT, this::visitWhileStmt);
     }
 
     private Void visitMethodDecl(JmmNode method, SymbolTable table) {
@@ -59,15 +68,56 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         // Create error report
         var message = String.format("Variable '%s' does not exist.", varRefName);
+        addErrorReport(varRefExpr, message);
+
+        return null;
+    }
+
+    private Void visitBinaryOp(JmmNode binaryOp, SymbolTable table) {
+        try {
+            Type resultType = TypeUtils.getExprType(binaryOp, table);
+
+        } catch (RuntimeException e) {
+            addErrorReport(binaryOp, e.getMessage());
+        }
+
+        return null;
+    }
+
+    private Void visitAssign(JmmNode assign, SymbolTable table) {
+        return null;
+    }
+
+    private Void visitIfStmt(JmmNode ifStmt, SymbolTable table) {
+        JmmNode condition = ifStmt.getChildren().get(0);
+        Type conditionType = TypeUtils.getExprType(condition, table);
+
+        if (!conditionType.getName().equals("boolean")) {
+            addErrorReport(ifStmt, "Condition expression must be boolean, found type '" + conditionType + "'");
+        }
+
+        return null;
+    }
+
+    private Void visitWhileStmt(JmmNode whileStmt, SymbolTable table) {
+        JmmNode condition = whileStmt.getChildren().get(0);
+        Type conditionType = TypeUtils.getExprType(condition, table);
+
+        if (!conditionType.getName().equals("boolean")) {
+            addErrorReport(whileStmt, "Condition expression must be boolean, found type '" + conditionType + "'");
+        }
+
+        return null;
+    }
+
+    private void addErrorReport(JmmNode node, String message) {
         addReport(Report.newError(
                 Stage.SEMANTIC,
-                NodeUtils.getLine(varRefExpr),
-                NodeUtils.getColumn(varRefExpr),
+                NodeUtils.getLine(node),
+                NodeUtils.getColumn(node),
                 message,
                 null)
         );
-
-        return null;
     }
 
 

@@ -22,27 +22,9 @@ public class TypeUtils {
         var kind = Kind.fromString(expr.getKind());
 
         Type type = switch (kind) {
-            case INTEGER_LITERAL -> new Type("int", false);
-            case BOOLEAN_LITERAL -> new Type("boolean", false);
-            case PARENTESIS -> getExprType(expr.getChildren().get(0), table);
-            case NEGATION -> new Type("boolean", false);
-            case LENGTH -> new Type("int", false);
-            case BINARY_EXPR -> getBinExprType(expr, table);
-
-            //not created
-            case NEW_CLASS -> new Type(expr.get("classname"), false);
-
-            case VAR_REF_EXPR -> getVarExprType(expr, table);
-
-            case FUNCTION_CALL -> getReturnType(expr, table);
-
-            case ARRAY_ACCESS -> new Type("int", false);
-
-            case ARRAY_DECLARATION -> new Type("int", false);
-
-            case METHOD_DECL -> new Type("int", false);
-
-            case OBJECT -> new Type("int", false);
+            case INTEGER_TYPE -> new Type("int", false);
+            case BOOLEAN_TYPE -> new Type("boolean", false);
+            case BINARY_OP -> getBinExprType(expr, table);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
@@ -54,10 +36,7 @@ public class TypeUtils {
         return "int";
     }
 
-    //get the binary expression type of an operation
     private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table ) {
-        // TODO: Simple implementation that needs to be expanded
-
         String operator = binaryExpr.get("op");
 
         JmmNode leftNode = binaryExpr.getChildren().get(0);
@@ -70,14 +49,14 @@ public class TypeUtils {
             throw new RuntimeException("Type mismatch between operands of expression '" + binaryExpr + "'");
         }
 
-        switch (operator) {
-            case "+", "-", "*", "/":
-                return new Type("int", false);
-            case "==", "!=", "<", ">", "<=", ">=":
-                return new Type("boolean", false);
-            default:
-                throw new RuntimeException("Unknown operator '" + operator + "' of expression '" + binaryExpr + "'");
-        }
+        return switch (operator) {
+            case "+", "-", "*", "/" ->
+                    new Type("int", false);
+            case "==", "!=", "<", ">", "<=", ">=" ->
+                    new Type("boolean", false);
+            default ->
+                    throw new RuntimeException("Unknown operator '" + operator + "' of expression '" + binaryExpr + "'");
+        };
     }
 
 
