@@ -106,7 +106,6 @@ public class TypeUtils {
      * @return true if sourceType can be assigned to destinationType
      */
     public static boolean areTypesAssignable(Type sourceType, Type destinationType) {
-        // TODO: Simple implementation that needs to be expanded
         return sourceType.getName().equals(destinationType.getName());
     }
 }

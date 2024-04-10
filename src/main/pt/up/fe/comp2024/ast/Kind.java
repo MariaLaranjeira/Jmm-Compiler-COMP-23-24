@@ -12,24 +12,24 @@ public enum Kind {
     VAR_DECL,
     TYPE,
     PARAM,
-    ASSIGN_STMT,
     RETURN_STMT,
     VAR_REF_EXPR,
     OBJECT,
-    ARRAY_DECL,
     METHOD_DECL,
     NEW_CLASS,
     FUNCTION_CALL,
     ARRAY_ACCESS,
 
+    ARRAY_ASSIGN_STMT,
+    ASSIGN_STMT,
     BINARY_OP,
-    IF_STMT,
+    CONDITIONAL_STMT,
     WHILE_STMT,
     BOOLEAN_TYPE,
     INTEGER_TYPE;
 
 
-    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT);
+    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, WHILE_STMT, CONDITIONAL_STMT);
     private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_OP, INTEGER_TYPE, VAR_REF_EXPR);
 
     private final String name;

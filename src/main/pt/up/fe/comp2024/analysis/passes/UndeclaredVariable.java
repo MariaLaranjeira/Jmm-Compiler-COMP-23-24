@@ -28,8 +28,9 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         addVisit(Kind.BINARY_OP, this::visitBinaryOp);
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
+        addVisit(Kind.ARRAY_ASSIGN_STMT, this::visitAssign);
 
-        addVisit(Kind.IF_STMT, this::visitIfStmt);
+        addVisit(Kind.CONDITIONAL_STMT, this::visitIfStmt);
         addVisit(Kind.WHILE_STMT, this::visitWhileStmt);
     }
 
@@ -85,6 +86,17 @@ public class UndeclaredVariable extends AnalysisVisitor {
     }
 
     private Void visitAssign(JmmNode assign, SymbolTable table) {
+        JmmNode left = assign.getChildren().get(0);
+        JmmNode right = assign.getChildren().get(1);
+
+        Type leftType = TypeUtils.getExprType(left, table);
+        Type rightType = TypeUtils.getExprType(right, table);
+
+        if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
+            String message = String.format("Cannot assign a value of type '%s' to a variable of type '%s'.", rightType.getName(), leftType.getName());
+            addErrorReport(assign, message);
+        }
+
         return null;
     }
 
@@ -105,6 +117,37 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         if (!conditionType.getName().equals("boolean")) {
             addErrorReport(whileStmt, "Condition expression must be boolean, found type '" + conditionType + "'");
+        }
+
+        return null;
+    }
+
+    private Void visitArrayAssign(JmmNode arrayAssign, SymbolTable table) {
+        JmmNode arrayRef = arrayAssign.getChildren().get(0);
+        JmmNode index = arrayAssign.getChildren().get(1);
+        JmmNode value = arrayAssign.getChildren().get(2);
+
+        Type arrayRefType = TypeUtils.getExprType(arrayRef, table);
+        Type indexType = TypeUtils.getExprType(index, table);
+        Type valueType = TypeUtils.getExprType(value, table);
+
+        // Check if the array reference is an array
+        if (!arrayRefType.isArray()) {
+            String message = String.format("Type '%s' is not an array.", arrayRefType.getName());
+            addErrorReport(arrayRef, message);
+            return null;
+        }
+
+        // Check if the index is an integer
+        if (!indexType.getName().equals("int")) {
+            String message = "Array index must be an integer.";
+            addErrorReport(index, message);
+            return null;
+        }
+
+        if (!TypeUtils.areTypesAssignable(valueType, arrayRefType)) {
+            String message = String.format("Cannot assign a value of type '%s' to an array element of type '%s'.", valueType.getName(), arrayRefType.getName());
+            addErrorReport(value, message);
         }
 
         return null;
