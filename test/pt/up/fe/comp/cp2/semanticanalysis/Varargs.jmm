@@ -6,6 +6,7 @@ class Varargs {
         return a;
     }
 
+    // the varargs here
     public int varargs(int... a) {
         return a[0];
     }

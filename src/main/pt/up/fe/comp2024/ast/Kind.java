@@ -11,21 +11,34 @@ public enum Kind {
     CLASS_DECL,
     VAR_DECL,
     TYPE,
+
     PARAM,
     RETURN_STMT,
-    VAR_REF_EXPR,
     OBJECT,
     METHOD_DECL,
     NEW_CLASS,
     FUNCTION_CALL,
     ARRAY_ACCESS,
-
+    VAR_STMT,
     ARRAY_ASSIGN_STMT,
+
     ASSIGN_STMT,
     BINARY_OP,
     CONDITIONAL_STMT,
     WHILE_STMT,
+
+    VAR_REF_EXPR,
+
+    BOOLEAN_LITERAL,
+    INTEGER_LITERAL,
+    //types
+    ARRAY_TYPE,
     BOOLEAN_TYPE,
+    FLOAT_TYPE,
+    DOUBLE_TYPE,
+    STRING_TYPE,
+    VOID_TYPE,
+    ID_TYPE,
     INTEGER_TYPE;
 
 

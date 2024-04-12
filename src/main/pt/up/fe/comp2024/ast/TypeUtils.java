@@ -17,26 +17,41 @@ public class TypeUtils {
      * @return
      */
     public static Type getExprType(JmmNode expr, SymbolTable table) {
-        // TODO: Simple implementation that needs to be expanded
-
         var kind = Kind.fromString(expr.getKind());
 
-        Type type = switch (kind) {
-            case INTEGER_TYPE -> new Type("int", false);
-            case BOOLEAN_TYPE -> new Type("boolean", false);
-            case BINARY_OP -> getBinExprType(expr, table);
+        return switch (kind) {
+            //type
+            case INTEGER_TYPE -> getType(expr);
+            case BOOLEAN_TYPE -> getType(expr);
+            case FLOAT_TYPE -> getType(expr);
+            case DOUBLE_TYPE -> getType(expr);
+            case STRING_TYPE -> getType(expr);
+            case ID_TYPE -> getType(expr);
+            case ARRAY_TYPE -> getArrayType(expr, table);
+            case INTEGER_LITERAL -> getType(expr);
+            case BOOLEAN_LITERAL -> getType(expr);
+            case VAR_REF_EXPR -> getVarExprType(expr, table);
 
+            case BINARY_OP -> getBinExprType(expr, table);
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
-
-        return type;
     }
 
     public static String getIntTypeName() {
         return "int";
     }
 
-    private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table ) {
+    private static Type getType(JmmNode jmmNode) {
+        return new Type (jmmNode.get("value"), false);
+    }
+
+    public static Type getArrayType(JmmNode array, SymbolTable table){
+        JmmNode baseTypeNode = array.getChildren().get(0);
+        Type baseType = getExprType(baseTypeNode, table);
+        return new Type(baseType.getName(), true);
+    }
+
+    private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table) {
         String operator = binaryExpr.get("op");
 
         JmmNode leftNode = binaryExpr.getChildren().get(0);
@@ -44,6 +59,10 @@ public class TypeUtils {
 
         Type leftType = getExprType(leftNode, table);
         Type rightType = getExprType(rightNode, table);
+
+        if(leftType.isArray() || rightType.isArray()){
+            throw new RuntimeException("Arrays cannot be used in arithmetic operations");
+        }
 
         if (!leftType.equals(rightType)) {
             throw new RuntimeException("Type mismatch between operands of expression '" + binaryExpr + "'");
@@ -59,7 +78,6 @@ public class TypeUtils {
         };
     }
 
-
     private static Type getReturnType(JmmNode functionCall, SymbolTable table) {
         // TODO: Simple implementation that needs to be expanded
         String methodName = functionCall.get("name");
@@ -67,17 +85,15 @@ public class TypeUtils {
     }
 
     private static Type getVarExprType(JmmNode varRefExpr, SymbolTable table) {
-        // TODO: Simple implementation that needs to be expanded
         String varName = varRefExpr.get("name");
 
-        // First, try to find the variable in the fields
+        //Var is a field
         for (Symbol field : table.getFields()) {
             if (field.getName().equals(varName)) {
                 return field.getType();
             }
         }
 
-        // If not found in fields, search in local variables of each method
         for (String method : table.getMethods()) {
             List<Symbol> locals = table.getLocalVariables(method);
             for (Symbol local : locals) {
@@ -86,7 +102,7 @@ public class TypeUtils {
                 }
             }
 
-            // Also check in method parameters
+            // Var is a parameter
             List<Symbol> parameters = table.getParameters(method);
             for (Symbol param : parameters) {
                 if (param.getName().equals(varName)) {
@@ -106,6 +122,14 @@ public class TypeUtils {
      * @return true if sourceType can be assigned to destinationType
      */
     public static boolean areTypesAssignable(Type sourceType, Type destinationType) {
-        return sourceType.getName().equals(destinationType.getName());
+        if (sourceType.getName().equals(destinationType.getName())) {
+            return true;
+        }
+        return false;
     }
+
+    public static boolean isTypeImported(Type type, SymbolTable table) {
+        return table.getImports().contains(type.getName());
+    }
+
 }

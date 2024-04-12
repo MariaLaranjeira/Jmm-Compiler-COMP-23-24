@@ -89,7 +89,7 @@ expr
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
     | value = 'this' #ThisExpr
-    | name = ID #VarRefExpr
+    | value = ID #VarRefExpr
     | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
     | 'new' ID '(' (expr (',' expr) *)? ')' #NewObject
