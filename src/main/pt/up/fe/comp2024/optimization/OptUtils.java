@@ -34,6 +34,14 @@ public class OptUtils {
 
         TYPE.checkOrThrow(typeNode);
 
+        // Check if the type node represents the "int" type
+        if (typeNode.getKind().equals("IntegerType")) {
+            return ".i32";
+        }
+        else if (typeNode.getKind().equals("BooleanType")){
+            return ".bool";
+        }
+
         String typeName = typeNode.get("name");
 
         return toOllirType(typeName);
@@ -47,6 +55,7 @@ public class OptUtils {
 
         String type = "." + switch (typeName) {
             case "int" -> "i32";
+            case "boolean" -> "bool";
             default -> throw new NotImplementedException(typeName);
         };
 

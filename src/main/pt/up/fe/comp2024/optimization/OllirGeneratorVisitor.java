@@ -1,11 +1,16 @@
 package pt.up.fe.comp2024.optimization;
 
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.comp2024.ast.TypeUtils;
+import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static pt.up.fe.comp2024.ast.Kind.*;
 
@@ -41,6 +46,9 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit(PARAM, this::visitParam);
         addVisit(RETURN_STMT, this::visitReturn);
         addVisit(ASSIGN_STMT, this::visitAssignStmt);
+        addVisit("ImportStmt", this::visitImportStmt);
+        addVisit("MainMethodStmt", this::visitMainMethod);
+        addVisit("VarStmt", this::visitVarDecl);
 
         setDefaultVisit(this::defaultVisit);
     }
@@ -159,9 +167,14 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder();
 
         code.append(table.getClassName());
-        code.append(L_BRACKET);
 
+        var superClass = table.getSuper();
+        if(!superClass.isEmpty()) {//if there is superclass
+            code.append(" extends ").append(superClass);
+        }
+        code.append(L_BRACKET);
         code.append(NL);
+
         var needNl = true;
 
         for (var child : node.getChildren()) {
@@ -215,4 +228,121 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         return "";
     }
+
+    private String visitImportStmt(JmmNode importDeclaration, Void unused) {
+
+        StringBuilder importStmt = new StringBuilder();
+        importStmt.append("import ");
+
+        // Extract the import value from the importDeclaration node
+        String importValue = importDeclaration.get("ID");
+
+        importStmt.append(importValue); // Append the import value directly
+
+        importStmt.append(";\n");
+
+        return importStmt.toString();
+    }
+
+
+    /*
+    private String visitMainMethod(JmmNode methodDeclaration, Void unused) {
+        StringBuilder method = new StringBuilder();
+        method.append(".method public static main([Ljava/lang/String;).V {\n");
+
+        for (JmmNode child : methodDeclaration.getChildren()) {
+            // Ignore variable declarations
+            if (!child.getKind().equals(VAR_DECL.toString())) {
+                method.append(visit(child, unused));
+            }
+        }
+
+        method.append("}\n");
+
+        return method.toString();
+    }
+     */
+
+    private String visitMainMethod(JmmNode methodDeclaration, Void unused) {
+        StringBuilder method = new StringBuilder();
+        method.append(".method ");
+        method.append("public ");
+        List<Symbol> parameters;
+        method.append("static ");
+        method.append("main(");
+        parameters = table.getParameters("main");
+        String codeParam = parameters.stream().map(OllirGeneratorVisitor::getCode).collect(Collectors.joining(", "));
+        method.append(codeParam);
+        method.append(").V");
+
+
+        for (JmmNode child : methodDeclaration.getChildren()) {
+            if (!child.getKind().equals("VarStmt")) {
+                method.append(visit(child, unused));
+            }
+        }
+        method.append("}\n");
+
+
+        return method.toString();
+    }
+
+    private String visitVarDecl(JmmNode varDeclaration, Void unused) {
+
+        StringBuilder variable = new StringBuilder();
+
+        // Check if the parent node is a ClassStmt or not
+        JmmNode parent = varDeclaration.getJmmParent();
+        if (parent.getKind().equals(CLASS_DECL.toString())) {
+            variable.append(".field private ");
+        } else {
+            // Extract the name and type of the variable from varDeclaration node
+            String name = varDeclaration.get("name");
+            String type = OptUtils.toOllirType(varDeclaration.getJmmChild(0));
+
+            // Append the variable declaration
+            variable.append(".field ");
+            variable.append(name);
+            variable.append(type);
+            variable.append(";\n");
+        }
+
+        return variable.toString();
+    }
+
+    // Utility Functions -------------------------------------------
+
+    public static String getCode(Symbol symbol) {
+        return symbol.getName() + getTypeOfOllir(symbol.getType());
+    }
+
+    public static String getTypeOfOllir(Type type) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(".");
+
+        if (type == null) {
+            stringBuilder.append("V");
+            return ".V";
+        }
+
+        if (type.isArray())
+            stringBuilder.append("array.");
+        String tipoJmm = type.getName();
+        switch (tipoJmm) {
+            case "int":
+                stringBuilder.append("i32");
+                break;
+            case "boolean":
+                stringBuilder.append("bool");
+                break;
+            case "void":
+                stringBuilder.append("V");
+                break;
+            default:
+                stringBuilder.append(tipoJmm);
+                break;
+        }
+        return stringBuilder.toString();
+    }
+
 }
