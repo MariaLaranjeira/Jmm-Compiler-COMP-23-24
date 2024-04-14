@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
  * @author JBispo
  */
 public class UndeclaredVariable extends AnalysisVisitor {
-
     private String currentMethod;
 
     @Override
@@ -34,12 +33,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.ARRAY_INITIALIZER, this::visitArrayInitializer);
         addVisit(Kind.ARRAY_ACCESS, this::visitArrayAccess);
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
-
-        /*
-
-
         addVisit(Kind.FUNCTION_CALL, this::visitFunctionCall);
-         */
     }
 
     private Void visitMethodDecl(JmmNode method, SymbolTable table) {
@@ -48,12 +42,11 @@ public class UndeclaredVariable extends AnalysisVisitor {
         } else {
             currentMethod = "main";
         }
+
         return null;
     }
 
     private Void visitVarRefExpr(JmmNode varRefExpr, SymbolTable table) {
-        SpecsCheck.checkNotNull(currentMethod, () -> "Expected current method to be set");
-
         // Check if exists a parameter or variable declaration with the same name as the variable reference
         var varRefName = varRefExpr.get("name");
 
@@ -99,6 +92,14 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         Type leftType = TypeUtils.getExprType(left, table);
         Type rightType = TypeUtils.getExprType(right, table);
+
+        if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
+            return null;
+        }
+
+        if(table.getSuper() != null  && table.getSuper().contains(leftType.getName())){
+            return null;
+        }
 
         if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
             String message = String.format("Cannot assign a value of type '%s' to a variable of type '%s'.", rightType.getName(), leftType.getName());
@@ -151,7 +152,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
         return null;
     }
 
-
     private Void visitArrayAccess(JmmNode arrayAssign, SymbolTable table) {
         JmmNode arrayRef = arrayAssign.getChildren().get(0);
         JmmNode index = arrayAssign.getChildren().get(1);
@@ -176,31 +176,28 @@ public class UndeclaredVariable extends AnalysisVisitor {
         return null;
     }
 
-    private Void visitNewObject(JmmNode newObject, SymbolTable table) {
-        String className = newObject.get("value");
-
-        // Check if the class is defined or imported
-        if (!table.getClassName().equals(className) && !table.getImports().contains(className)) {
-            addErrorReport(newObject, String.format("Class '%s' is not defined or imported.", className));
-        }
-
-        return null;
-    }
-
     private Void visitFunctionCall(JmmNode functionCall, SymbolTable table) {
+        JmmNode objectNode = functionCall.getChildren().get(0);
         String methodName = functionCall.get("value");
 
-        // Check if the function call is to a method in the current class, an imported class, or superclass
-        if (!table.getMethods().contains(methodName) &&
-                !TypeUtils.isTypeImported(methodName, table) &&
-                !TypeUtils.isMethodInSuperClass(methodName, table)) {
+        Type objectType = TypeUtils.getExprType(objectNode, table);
+
+        //verify if the classes are being imported.
+        if (TypeUtils.isTypeImported(objectType.getName(), table)) {
+            return null;
+        }
+
+        ///verify if the class extends an imported class
+        if(table.getSuper() != null  && !table.getSuper().isEmpty()){
+            return null;
+        }
+
+        if (!table.getMethods().contains(methodName)) {
             addErrorReport(functionCall, String.format("Method '%s' is not defined in the current class, an imported class, or superclass.", methodName));
         }
 
         return null;
     }
-
-
 
     private void addErrorReport(JmmNode node, String message) {
         addReport(Report.newError(

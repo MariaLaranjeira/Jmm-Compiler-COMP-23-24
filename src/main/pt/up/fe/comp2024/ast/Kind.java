@@ -28,6 +28,7 @@ public enum Kind {
     BINARY_OP,
     CONDITIONAL_STMT,
     WHILE_STMT,
+    THIS_EXPR,
     VAR_REF_EXPR,
     BOOLEAN_LITERAL,
     INTEGER_LITERAL,

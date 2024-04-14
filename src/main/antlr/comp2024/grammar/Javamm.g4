@@ -28,8 +28,8 @@ mainFieldDecl
     ;
 
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}'
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}'
     ;
 
 

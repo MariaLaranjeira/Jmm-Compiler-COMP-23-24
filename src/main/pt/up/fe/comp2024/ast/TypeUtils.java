@@ -4,9 +4,11 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
+
 import pt.up.fe.comp2024.symboltable.JmmSymbolTable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TypeUtils {
 
@@ -24,11 +26,13 @@ public class TypeUtils {
             //type
             case INTEGER_LITERAL -> new Type("int", false);
             case BOOLEAN_LITERAL -> new Type("boolean", false);
-            case NEW_OBJECT -> getNewObjectType(expr, table);
 
+            case NEW_OBJECT -> getNewObjectType(expr, table);
             case VAR_REF_EXPR -> getVarExprType(expr, table);
             case ARRAY_INITIALIZER -> getArrayType(expr, table);
             case BINARY_OP -> getBinExprType(expr, table);
+            case FUNCTION_CALL -> getReturnType(expr, table);
+            case THIS_EXPR -> new Type(table.getClassName(), false);
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
     }
@@ -79,8 +83,8 @@ public class TypeUtils {
     }
 
     private static Type getReturnType(JmmNode functionCall, SymbolTable table) {
-        // TODO: Simple implementation that needs to be expanded
-        String methodName = functionCall.get("name");
+        String methodName = functionCall.get("value");
+
         return table.getReturnType(methodName);
     }
 
@@ -122,17 +126,6 @@ public class TypeUtils {
         return new Type(className, false);
     }
 
-    private static Type getNewArrayType(JmmNode expr, SymbolTable table) {
-
-        //not implemented
-        String className = expr.get("value");
-
-        return new Type(className, false);
-    }
-
-
-
-
     /**
      * @param sourceType
      * @param destinationType
@@ -146,20 +139,12 @@ public class TypeUtils {
     }
 
     public static boolean isTypeImported(String typeName, SymbolTable table) {
-        return table.getImports().contains(typeName);
-    }
-
-    public static boolean isMethodInSuperClass(String methodName, SymbolTable table) {
-        String superClassName = table.getSuper();
-
-        if (superClassName == null || superClassName.isEmpty()) {
-            return false;
+        List<String> imports = table.getImports();
+        for (String sublist : imports) {
+            if (sublist.contains(typeName)) {
+                return true;
+            }
         }
-
-        // Get the SymbolTable for the superclass
-
-
-        // Check if the method is present in the superclass SymbolTable
         return false;
     }
 
