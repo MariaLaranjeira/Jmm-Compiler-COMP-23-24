@@ -28,8 +28,13 @@ mainFieldDecl
     ;
 
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}' #MethodStmt
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
+    ;
+
+
+returnStmt
+    : 'return' expr ';'
     ;
 
 type
@@ -68,8 +73,8 @@ stmt
     | 'while' '(' expr ')' stmt #WhileStmt
     | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
-    | var = ID '=' expr ';' #AssignStmt
-    | var = ID '[' expr ']' '=' expr ';' #ArrayAssignStmt
+    | expr '=' expr ';' #AssignStmt
+    | expr '[' expr ']' '=' expr ';' #ArrayAssignStmt
     ;
 
 ifStmt
@@ -89,10 +94,10 @@ expr
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
     | value = 'this' #ThisExpr
-    | value = ID #VarRefExpr
+    | name = ID #VarRefExpr
     | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
-    | 'new' ID '(' (expr (',' expr) *)? ')' #NewObject
+    | 'new' value=ID '(' (expr (',' expr) *)? ')' #NewObject
     | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
     | expr '[' expr ']' #ArrayAccess
     | expr '.' 'length' #Length

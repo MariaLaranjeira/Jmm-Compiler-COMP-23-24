@@ -4,6 +4,7 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
+import pt.up.fe.comp2024.symboltable.JmmSymbolTable;
 
 import java.util.List;
 
@@ -21,17 +22,12 @@ public class TypeUtils {
 
         return switch (kind) {
             //type
-            case INTEGER_TYPE -> getType(expr);
-            case BOOLEAN_TYPE -> getType(expr);
-            case FLOAT_TYPE -> getType(expr);
-            case DOUBLE_TYPE -> getType(expr);
-            case STRING_TYPE -> getType(expr);
-            case ID_TYPE -> getType(expr);
-            case ARRAY_TYPE -> getArrayType(expr, table);
-            case INTEGER_LITERAL -> getType(expr);
-            case BOOLEAN_LITERAL -> getType(expr);
-            case VAR_REF_EXPR -> getVarExprType(expr, table);
+            case INTEGER_LITERAL -> new Type("int", false);
+            case BOOLEAN_LITERAL -> new Type("boolean", false);
+            case NEW_OBJECT -> getNewObjectType(expr, table);
 
+            case VAR_REF_EXPR -> getVarExprType(expr, table);
+            case ARRAY_INITIALIZER -> getArrayType(expr, table);
             case BINARY_OP -> getBinExprType(expr, table);
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
@@ -41,14 +37,18 @@ public class TypeUtils {
         return "int";
     }
 
-    private static Type getType(JmmNode jmmNode) {
-        return new Type (jmmNode.get("value"), false);
-    }
+    public static Type getArrayType(JmmNode arrayInitializer, SymbolTable table) {
 
-    public static Type getArrayType(JmmNode array, SymbolTable table){
-        JmmNode baseTypeNode = array.getChildren().get(0);
-        Type baseType = getExprType(baseTypeNode, table);
-        return new Type(baseType.getName(), true);
+        Type expectedType = getExprType(arrayInitializer.getChildren().get(0), table);
+        for (JmmNode child : arrayInitializer.getChildren()) {
+            Type childType = getExprType(child, table);
+            if (!childType.equals(expectedType)) {
+                throw new RuntimeException("Inconsistent types in array initializer: found type "
+                        + childType.getName() + " but expected " + expectedType.getName());
+            }
+        }
+
+        return new Type(expectedType.getName(), true);
     }
 
     private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table) {
@@ -95,6 +95,7 @@ public class TypeUtils {
         }
 
         for (String method : table.getMethods()) {
+            //Var is a local variable
             List<Symbol> locals = table.getLocalVariables(method);
             for (Symbol local : locals) {
                 if (local.getName().equals(varName)) {
@@ -115,6 +116,22 @@ public class TypeUtils {
         throw new RuntimeException("Variable '" + varName + "' is not defined in the symbol table");
     }
 
+    private static Type getNewObjectType(JmmNode expr, SymbolTable table) {
+        String className = expr.get("value");
+
+        return new Type(className, false);
+    }
+
+    private static Type getNewArrayType(JmmNode expr, SymbolTable table) {
+
+        //not implemented
+        String className = expr.get("value");
+
+        return new Type(className, false);
+    }
+
+
+
 
     /**
      * @param sourceType
@@ -122,14 +139,28 @@ public class TypeUtils {
      * @return true if sourceType can be assigned to destinationType
      */
     public static boolean areTypesAssignable(Type sourceType, Type destinationType) {
-        if (sourceType.getName().equals(destinationType.getName())) {
+        if (sourceType.equals(destinationType)) {
             return true;
         }
         return false;
     }
 
-    public static boolean isTypeImported(Type type, SymbolTable table) {
-        return table.getImports().contains(type.getName());
+    public static boolean isTypeImported(String typeName, SymbolTable table) {
+        return table.getImports().contains(typeName);
+    }
+
+    public static boolean isMethodInSuperClass(String methodName, SymbolTable table) {
+        String superClassName = table.getSuper();
+
+        if (superClassName == null || superClassName.isEmpty()) {
+            return false;
+        }
+
+        // Get the SymbolTable for the superclass
+
+
+        // Check if the method is present in the superclass SymbolTable
+        return false;
     }
 
 }

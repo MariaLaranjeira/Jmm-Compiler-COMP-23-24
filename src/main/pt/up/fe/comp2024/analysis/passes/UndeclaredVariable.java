@@ -11,6 +11,9 @@ import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.comp2024.ast.TypeUtils;
 import pt.up.fe.specs.util.SpecsCheck;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Checks if the type of the expression in a return statement is compatible with the method return type.
  *
@@ -25,12 +28,18 @@ public class UndeclaredVariable extends AnalysisVisitor {
         //Declaration and reference Checks
         addVisit(Kind.METHOD_DECL, this::visitMethodDecl);
         addVisit(Kind.VAR_REF_EXPR, this::visitVarRefExpr);
-
         addVisit(Kind.BINARY_OP, this::visitBinaryOp);
+        addVisit(Kind.WHILE_STMT, this::visitWhileStmt);
+        addVisit(Kind.CONDITIONAL_STMT, this::visitIfStmt);
+        addVisit(Kind.ARRAY_INITIALIZER, this::visitArrayInitializer);
+        addVisit(Kind.ARRAY_ACCESS, this::visitArrayAccess);
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
 
-        addVisit(Kind.CONDITIONAL_STMT, this::visitIfStmt);
-        addVisit(Kind.WHILE_STMT, this::visitWhileStmt);
+        /*
+
+
+        addVisit(Kind.FUNCTION_CALL, this::visitFunctionCall);
+         */
     }
 
     private Void visitMethodDecl(JmmNode method, SymbolTable table) {
@@ -91,10 +100,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
         Type leftType = TypeUtils.getExprType(left, table);
         Type rightType = TypeUtils.getExprType(right, table);
 
-        if (TypeUtils.isTypeImported(leftType, table) && TypeUtils.isTypeImported(rightType, table)) {
-            return null;
-        }
-
         if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
             String message = String.format("Cannot assign a value of type '%s' to a variable of type '%s'.", rightType.getName(), leftType.getName());
             addErrorReport(assign, message);
@@ -125,6 +130,77 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         return null;
     }
+
+    private Void visitArrayInitializer(JmmNode arrayInitializer, SymbolTable table) {
+        if (arrayInitializer.getChildren().isEmpty()) {
+            addErrorReport(arrayInitializer, "Empty array initializers are not allowed.");
+            return null;
+        }
+
+        Type expectedBaseType = TypeUtils.getExprType(arrayInitializer.getChildren().get(0), table);
+
+        for (JmmNode expr : arrayInitializer.getChildren()) {
+            Type exprType = TypeUtils.getExprType(expr, table);
+            if (!exprType.equals(expectedBaseType)) {
+                addErrorReport(arrayInitializer, String.format("Array initializer contains an element of type '%s', but expected type was '%s'.",
+                        exprType.getName(), expectedBaseType.getName()));
+                break;
+            }
+        }
+
+        return null;
+    }
+
+
+    private Void visitArrayAccess(JmmNode arrayAssign, SymbolTable table) {
+        JmmNode arrayRef = arrayAssign.getChildren().get(0);
+        JmmNode index = arrayAssign.getChildren().get(1);
+
+        Type arrayRefType = TypeUtils.getExprType(arrayRef, table);
+        Type indexType = TypeUtils.getExprType(index, table);
+
+        // Check if the array reference is an array
+        if (!arrayRefType.isArray()) {
+            String message = String.format("Type '%s' is not an array.", arrayRefType.getName());
+            addErrorReport(arrayRef, message);
+            return null;
+        }
+
+        // Check if the index is an integer
+        if (!indexType.getName().equals("int")) {
+            String message = "Array index must be an integer.";
+            addErrorReport(index, message);
+            return null;
+        }
+
+        return null;
+    }
+
+    private Void visitNewObject(JmmNode newObject, SymbolTable table) {
+        String className = newObject.get("value");
+
+        // Check if the class is defined or imported
+        if (!table.getClassName().equals(className) && !table.getImports().contains(className)) {
+            addErrorReport(newObject, String.format("Class '%s' is not defined or imported.", className));
+        }
+
+        return null;
+    }
+
+    private Void visitFunctionCall(JmmNode functionCall, SymbolTable table) {
+        String methodName = functionCall.get("value");
+
+        // Check if the function call is to a method in the current class, an imported class, or superclass
+        if (!table.getMethods().contains(methodName) &&
+                !TypeUtils.isTypeImported(methodName, table) &&
+                !TypeUtils.isMethodInSuperClass(methodName, table)) {
+            addErrorReport(functionCall, String.format("Method '%s' is not defined in the current class, an imported class, or superclass.", methodName));
+        }
+
+        return null;
+    }
+
+
 
     private void addErrorReport(JmmNode node, String message) {
         addReport(Report.newError(
