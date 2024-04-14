@@ -27,8 +27,12 @@ mainFieldDecl
     : type 'main' ';' #MainFieldStmt
     ;
 
+returnStmt
+    : 'return' expr ';'
+    ;
+
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* 'return' expr ';' '}' #MethodStmt
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt '}' #MethodStmt
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
     ;
 
@@ -89,7 +93,7 @@ expr
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
     | value = 'this' #ThisExpr
-    | value = ID #VarRefExpr
+    | name = ID #VarRefExpr
     | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
     | 'new' ID '(' (expr (',' expr) *)? ')' #NewObject
