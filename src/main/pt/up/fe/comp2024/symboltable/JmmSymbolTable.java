@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 public class JmmSymbolTable implements SymbolTable {
-    private String currentMethod;
     private final String className;
     private final String supers;
     private final List<Symbol> fields;

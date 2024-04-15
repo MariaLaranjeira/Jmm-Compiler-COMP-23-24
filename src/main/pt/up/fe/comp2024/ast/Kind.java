@@ -12,7 +12,6 @@ public enum Kind {
     VAR_DECL,
     TYPE,
 
-    PARAM_EXPR,
     PARAM,
     RETURN_STMT,
     METHOD_DECL,
@@ -34,13 +33,6 @@ public enum Kind {
     BOOLEAN_LITERAL,
     INTEGER_LITERAL,
     //types
-    ARRAY_TYPE,
-    BOOLEAN_TYPE,
-    FLOAT_TYPE,
-    DOUBLE_TYPE,
-    STRING_TYPE,
-    VOID_TYPE,
-    ID_TYPE,
     INTEGER_TYPE;
 
 
