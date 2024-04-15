@@ -12,6 +12,7 @@ public enum Kind {
     VAR_DECL,
     TYPE,
 
+    PARAM_EXPR,
     PARAM,
     RETURN_STMT,
     METHOD_DECL,

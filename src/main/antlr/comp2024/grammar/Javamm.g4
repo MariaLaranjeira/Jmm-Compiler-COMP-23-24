@@ -56,16 +56,16 @@ param
     : type name=ID
     ;
 
-params
-    : param (',' param)* (',' varargsParam)?
-    | varargsParam
-    | //empty
-    ;
 
 varargsParam
     : type '...' name=ID
     ;
 
+params
+    : param (',' param)* (',' varargsParam)?
+    | varargsParam
+    | //empty
+    ;
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
@@ -100,13 +100,11 @@ expr
     | 'new' value=ID '(' (expr (',' expr) *)? ')' #NewObject
     | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
     | expr '[' expr ']' #ArrayAccess
-    | expr '.' 'length' #Length
     | expr '.' value=ID '(' (expr (',' expr)*)? ')' #FunctionCall
     | expr op = ('*' | '/') expr #BinaryOp
     | expr op = ('+' | '-') expr #BinaryOp
     | expr op = ('<' | '>' | '==') expr #BinaryOp
-    | expr op=('!=' | '+=' | '<=' | '>=' | '-=' | '*=' | '/=') expr #BinaryOp
-    | expr op = ('&&' | '||') expr #BinaryOp
+    | expr op=('!=' | '+=' | '<=' | '>=') expr #BinaryOp
     ;
 
 
