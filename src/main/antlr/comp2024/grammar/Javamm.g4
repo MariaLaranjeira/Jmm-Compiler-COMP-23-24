@@ -32,8 +32,13 @@ returnStmt
     ;
 
 methodDecl
-    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt '}' #MethodStmt
-    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodStmt
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}'
+    | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}'
+    ;
+
+
+returnStmt
+    : 'return' expr ';'
     ;
 
 type
@@ -55,16 +60,16 @@ param
     : type name=ID
     ;
 
-params
-    : param (',' param)* (',' varargsParam)?
-    | varargsParam
-    | //empty
-    ;
 
 varargsParam
     : type '...' name=ID
     ;
 
+params
+    : param (',' param)* (',' varargsParam)?
+    | varargsParam
+    | //empty
+    ;
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
@@ -72,8 +77,8 @@ stmt
     | 'while' '(' expr ')' stmt #WhileStmt
     | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
-    | var = ID '=' expr ';' #AssignStmt
-    | var = ID '[' expr ']' '=' expr ';' #ArrayAssignStmt
+    | expr '=' expr ';' #AssignStmt
+    | expr '[' expr ']' '=' expr ';' #ArrayAssignStmt
     ;
 
 ifStmt
@@ -96,16 +101,20 @@ expr
     | name = ID #VarRefExpr
     | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
-    | 'new' ID '(' (expr (',' expr) *)? ')' #NewObject
+    | 'new' value=ID '(' (expr (',' expr) *)? ')' #NewObject
     | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
     | expr '[' expr ']' #ArrayAccess
-    | expr '.' 'length' #Length
     | expr '.' value=ID '(' (expr (',' expr)*)? ')' #FunctionCall
+    | expr '.' 'length' #Length
+    | value = '!' expr #NotExpr
     | expr op = ('*' | '/') expr #BinaryOp
     | expr op = ('+' | '-') expr #BinaryOp
     | expr op = ('<' | '>' | '==') expr #BinaryOp
-    | expr op=('!=' | '+=' | '<=' | '>=' | '-=' | '*=' | '/=') expr #BinaryOp
     | expr op = ('&&' | '||') expr #BinaryOp
+    | value = INTEGER #IntegerLiteral
+    | value = ('true' | 'false') #BooleanLiteral
+    | value = 'this' #ThisExpr
+    | name = ID #VarRefExpr
     ;
 
 

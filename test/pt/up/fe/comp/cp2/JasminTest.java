@@ -33,7 +33,7 @@ public class JasminTest {
         testOllirToJasmin("pt/up/fe/comp/cp2/jasmin/OllirToJasminFields.ollir");
     }
 
-    public static void testOllirToJasmin(String resource, String expectedOutput) {
+    public static void  testOllirToJasmin(String resource, String expectedOutput) {
         JasminResult result = null;
 
         // If AstToJasmin pipeline, change name of the resource and execute other test
