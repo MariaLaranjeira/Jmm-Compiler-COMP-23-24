@@ -79,6 +79,34 @@ public class GrammarTest {
     }
 
     @Test
+    public void testSimpleJavaProgram_ollir() {
+        String code =
+                "import io;\n" +
+                        "import Quicksort;\n" +
+                        "\n" +
+                        "class CompileBasic extends Quicksort {\n" +
+                        "\n" +
+                        "    int intField;\n" +
+                        "    boolean boolField;\n" +
+                        "\n" +
+                        "    public int method1() {\n" +
+                        "        int intLocal1;\n" +
+                        "        boolean boolLocal1;\n" +
+                        "\n" +
+                        "        return 0;\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    public boolean method2(int intParam1, boolean boolParam1) {\n" +
+                        "        return boolParam1;\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    public static void main(String[] args) {\n" +
+                        "    }\n" +
+                        "}";
+        TestUtils.parseVerbose(code, MAIN_METHOD);
+    }
+
+    @Test
     public void testInstanceMethodEmpty() {
         TestUtils.parseVerbose("int foo(int anInt, int[] anArray, boolean aBool, String aString) {return a;}",
                 INSTANCE_METHOD);

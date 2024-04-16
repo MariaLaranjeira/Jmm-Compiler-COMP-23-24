@@ -27,15 +27,15 @@ mainFieldDecl
     : type 'main' ';' #MainFieldStmt
     ;
 
+returnStmt
+    : 'return' expr ';'
+    ;
+
 methodDecl
     : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}'
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}'
     ;
 
-
-returnStmt
-    : 'return' expr ';'
-    ;
 
 type
     : type '[' ']' #ArrayType
@@ -90,7 +90,12 @@ elseStmt
     ;
 
 expr
-    : '(' expr ')' #ParenExpr
+    : value = '!' expr #NotExpr
+    | value = INTEGER #IntegerLiteral
+    | value = ('true' | 'false') #BooleanLiteral
+    | value = 'this' #ThisExpr
+    | name = ID #VarRefExpr
+    | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
     | 'new' value=ID '(' (expr (',' expr) *)? ')' #NewObject
     | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
