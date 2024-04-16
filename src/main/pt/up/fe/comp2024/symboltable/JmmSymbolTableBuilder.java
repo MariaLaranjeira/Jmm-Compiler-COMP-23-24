@@ -33,7 +33,7 @@ public class JmmSymbolTableBuilder {
         var locals = buildLocals(classDecl);
 
         var imports = root.getChildren("ImportStmt").stream()
-                .map(importDecl -> importDecl.get("value"))
+                .map(importDecl -> importDecl.get("ID"))
                 .toList();
 
         return new JmmSymbolTable(className,supers, imports, fields, methods, returnTypes, params, locals);

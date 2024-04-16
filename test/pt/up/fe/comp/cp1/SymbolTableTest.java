@@ -33,6 +33,7 @@ public class SymbolTableTest {
     public void NumImports() {
         var semantics = test("symboltable/Imports.jmm", false);
         assertEquals(2, semantics.getSymbolTable().getImports().size());
+        int i = 0;
     }
 
     @Test
