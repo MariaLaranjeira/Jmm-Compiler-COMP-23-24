@@ -10,6 +10,7 @@ import pt.up.fe.specs.util.utilities.StringLines;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +43,9 @@ public class JasminGenerator {
         this.generators = new FunctionClassMap<>();
         generators.put(ClassUnit.class, this::generateClassUnit);
         generators.put(Method.class, this::generateMethod);
+        generators.put(PutFieldInstruction.class, this::generatePutField);
         generators.put(AssignInstruction.class, this::generateAssign);
+        generators.put(GetFieldInstruction.class, this::generateGetField);
         generators.put(SingleOpInstruction.class, this::generateSingleOp);
         generators.put(LiteralElement.class, this::generateLiteral);
         generators.put(Operand.class, this::generateOperand);
@@ -71,25 +74,28 @@ public class JasminGenerator {
 
         // generate class name
         var className = ollirResult.getOllirClass().getClassName();
-        code.append(".class ").append(className).append(NL).append(NL);
+        code.append(".class ").append(className).append(NL);
 
-        // generate fields
-        var fields = ollirResult.getOllirClass().getFields();
-        for (var field : fields) {
-            code.append(".field ").append(field.getFieldName()).append(".").append(field.getFieldType().toString().toLowerCase()).append(NL);
-        }
 
         // generate super class name
         var extended = ollirResult.getOllirClass().getSuperClass();
 
+        String defaultConstructor;
+
         if (extended != null) {
             code.append(".super ").append(extended).append(NL);
+            defaultConstructor = """
+                ;default constructor
+                .method public <init>()V
+                    aload_0
+                    invokespecial %s/<init>()V
+                    return
+                .end method
+                """.formatted(extended);
+
         } else {
             code.append(".super java/lang/Object").append(NL);
-        }
-
-        // generate a single constructor method
-        var defaultConstructor = """
+            defaultConstructor = """
                 ;default constructor
                 .method public <init>()V
                     aload_0
@@ -97,6 +103,22 @@ public class JasminGenerator {
                     return
                 .end method
                 """;
+        }
+
+        // generate fields
+        var fields = ollirResult.getOllirClass().getFields();
+        for (var field : fields) {
+            code.append(".field ").append(field.getFieldName());
+            switch (field.getFieldType().toString()){
+                case "INT32" -> code.append(" I").append(NL);
+                case "BOOLEAN" -> code.append(" Z").append(NL);
+                default -> throw new NotImplementedException(field.getFieldType());
+            }
+        }
+
+
+        code.append(NL);
+
         code.append(defaultConstructor);
 
         // generate code for all other methods
@@ -111,6 +133,9 @@ public class JasminGenerator {
 
             code.append(generators.apply(method));
         }
+
+        //System.out.println(code);
+
 
         return code.toString();
     }
@@ -169,10 +194,88 @@ public class JasminGenerator {
             code.append(instCode);
         }
 
+
         code.append(".end method\n");
 
         // unset method
         currentMethod = null;
+
+        return code.toString();
+    }
+
+    private String generateGetField(GetFieldInstruction getField) {
+        var code = new StringBuilder();
+
+        code.append("getfield ");
+
+        var fc = getField.getOperands().get(0).getType();
+        String fieldClass = "";
+        if (fc != null) {
+            fieldClass = fc.toString();
+        }
+
+        if (ollirResult.getOllirClass().getSuperClass() != null){
+            if (fieldClass.contains(ollirResult.getOllirClass().getSuperClass())){
+                code.append(ollirResult.getOllirClass().getSuperClass()).append("/");
+            }
+        } else {
+            code.append(ollirResult.getOllirClass().getClassName()).append("/");
+        }
+
+        var tmp = getField.getOperands().get(1);
+        Operand lhs = (Operand) tmp;
+
+        code.append(lhs.getName());
+
+        switch (tmp.getType().toString()){
+            case "INT32" -> code.append(" I");
+            case "BOOLEAN" -> code.append(" Z");
+            default -> throw new NotImplementedException(tmp.getType());
+        }
+
+        code.append(NL);
+
+
+        return code.toString();
+    }
+
+    private String generatePutField(PutFieldInstruction putField) {
+        var code = new StringBuilder();
+
+        code.append("aload_0").append(NL);
+
+        code.append(generators.apply(putField.getOperands().get(2)));
+
+        code.append("putfield ");
+
+
+        var fc = putField.getOperands().get(0).getType();
+        String fieldClass = "";
+        if (fc != null) {
+            fieldClass = fc.toString();
+        }
+
+        if (ollirResult.getOllirClass().getSuperClass() != null){
+            if (fieldClass.contains(ollirResult.getOllirClass().getSuperClass())){
+                code.append(ollirResult.getOllirClass().getSuperClass()).append("/");
+            }
+        } else {
+            code.append(ollirResult.getOllirClass().getClassName()).append("/");
+        }
+
+        var tmp = putField.getOperands().get(1);
+        Operand lhs = (Operand) tmp;
+
+        code.append(lhs.getName());
+
+        switch (tmp.getType().toString()){
+            case "INT32" -> code.append(" I");
+            case "BOOLEAN" -> code.append(" Z");
+            default -> throw new NotImplementedException(tmp.getType());
+        }
+
+        code.append(NL).append("aload_0").append(NL);
+
 
         return code.toString();
     }
@@ -191,7 +294,6 @@ public class JasminGenerator {
         }
 
         var operand = (Operand) lhs;
-        System.out.println("lhs "+ lhs + " rhs "+ assign.getRhs());
 
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
@@ -211,7 +313,6 @@ public class JasminGenerator {
     }
 
     private String generateOperand(Operand operand) {
-        // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
         return "iload " + reg + NL;
     }
@@ -238,10 +339,17 @@ public class JasminGenerator {
     private String generateReturn(ReturnInstruction returnInst) {
         var code = new StringBuilder();
 
-        // TODO: Hardcoded to int return type, needs to be expanded
+        if(returnInst.getOperand() == null) {
+            return "return" + NL;
+        }
 
         code.append(generators.apply(returnInst.getOperand()));
-        code.append("ireturn").append(NL);
+
+        if(Objects.equals(currentMethod.getReturnType().toString(), "INT32") || Objects.equals(currentMethod.getReturnType().toString(), "BOOLEAN")) {
+            code.append("ireturn").append(NL);
+        } else {
+            code.append("return").append(NL);
+        }
 
         return code.toString();
     }
