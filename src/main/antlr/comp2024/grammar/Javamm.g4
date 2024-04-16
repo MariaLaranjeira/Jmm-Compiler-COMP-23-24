@@ -37,10 +37,6 @@ methodDecl
     ;
 
 
-returnStmt
-    : 'return' expr ';'
-    ;
-
 type
     : type '[' ']' #ArrayType
     | value = 'boolean' #BooleanType

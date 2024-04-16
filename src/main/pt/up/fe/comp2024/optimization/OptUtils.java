@@ -41,6 +41,9 @@ public class OptUtils {
         else if (typeNode.getKind().equals("BooleanType")){
             return ".bool";
         }
+        else if (typeNode.getKind().equals("VoidType")){
+            return ".V";
+        }
 
         String typeName = typeNode.get("name");
 
@@ -56,6 +59,8 @@ public class OptUtils {
         String type = "." + switch (typeName) {
             case "int" -> "i32";
             case "boolean" -> "bool";
+            case "void", "static void" -> "V";
+            case "String" -> "String";
             default -> throw new NotImplementedException(typeName);
         };
 
