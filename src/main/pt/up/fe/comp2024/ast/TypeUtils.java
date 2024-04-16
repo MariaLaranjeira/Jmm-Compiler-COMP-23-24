@@ -4,9 +4,9 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
-import pt.up.fe.comp2024.symboltable.JmmSymbolTable;
 
 import java.util.List;
+import java.util.Optional;
 
 public class TypeUtils {
 
@@ -21,14 +21,17 @@ public class TypeUtils {
         var kind = Kind.fromString(expr.getKind());
 
         return switch (kind) {
-            //type
             case INTEGER_LITERAL -> new Type("int", false);
             case BOOLEAN_LITERAL -> new Type("boolean", false);
+            case VARARGS_PARAM -> getVarargsType(expr, table);
             case NEW_OBJECT -> getNewObjectType(expr, table);
-
             case VAR_REF_EXPR -> getVarExprType(expr, table);
             case ARRAY_INITIALIZER -> getArrayType(expr, table);
             case BINARY_OP -> getBinExprType(expr, table);
+            case FUNCTION_CALL -> getReturnType(expr, table);
+            case THIS_EXPR -> new Type(table.getClassName(), false);
+            case ARRAY_ACCESS -> getArrayAccessType(expr, table);
+
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
     }
@@ -49,6 +52,13 @@ public class TypeUtils {
         }
 
         return new Type(expectedType.getName(), true);
+    }
+
+    public static Type getArrayAccessType(JmmNode arrayAccessNode, SymbolTable table) {
+        JmmNode arrayNode = arrayAccessNode.getChildren().get(0);
+        Type arrayType = getExprType(arrayNode, table);
+
+        return new Type(arrayType.getName(), false);
     }
 
     private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table) {
@@ -79,13 +89,13 @@ public class TypeUtils {
     }
 
     private static Type getReturnType(JmmNode functionCall, SymbolTable table) {
-        // TODO: Simple implementation that needs to be expanded
-        String methodName = functionCall.get("name");
+        String methodName = functionCall.get("value");
         return table.getReturnType(methodName);
     }
 
     private static Type getVarExprType(JmmNode varRefExpr, SymbolTable table) {
         String varName = varRefExpr.get("name");
+        String currentMethod = findCurrentMethodName(varRefExpr);
 
         //Var is a field
         for (Symbol field : table.getFields()) {
@@ -94,21 +104,19 @@ public class TypeUtils {
             }
         }
 
-        for (String method : table.getMethods()) {
-            //Var is a local variable
-            List<Symbol> locals = table.getLocalVariables(method);
-            for (Symbol local : locals) {
-                if (local.getName().equals(varName)) {
-                    return local.getType();
-                }
+        //Var is a local variable
+        List<Symbol> locals = table.getLocalVariables(currentMethod);
+        for (Symbol local : locals) {
+            if (local.getName().equals(varName)) {
+                return local.getType();
             }
+        }
 
-            // Var is a parameter
-            List<Symbol> parameters = table.getParameters(method);
-            for (Symbol param : parameters) {
-                if (param.getName().equals(varName)) {
-                    return param.getType();
-                }
+        // Var is a parameter
+        List<Symbol> parameters = table.getParameters(currentMethod);
+        for (Symbol param : parameters) {
+            if (param.getName().equals(varName)) {
+                return param.getType();
             }
         }
 
@@ -118,20 +126,18 @@ public class TypeUtils {
 
     private static Type getNewObjectType(JmmNode expr, SymbolTable table) {
         String className = expr.get("value");
-
         return new Type(className, false);
     }
 
-    private static Type getNewArrayType(JmmNode expr, SymbolTable table) {
+    private static Type getVarargsType(JmmNode varargsParam, SymbolTable table) {
+        JmmNode typeNode = varargsParam.getChildren().get(0);
+        String baseTypeName = typeNode.get("name");
+        boolean isArray = true;
+        Type varargType = new Type(baseTypeName, isArray);
+        varargType.putObject("isVararg", true);
 
-        //not implemented
-        String className = expr.get("value");
-
-        return new Type(className, false);
+        return varargType;
     }
-
-
-
 
     /**
      * @param sourceType
@@ -139,28 +145,28 @@ public class TypeUtils {
      * @return true if sourceType can be assigned to destinationType
      */
     public static boolean areTypesAssignable(Type sourceType, Type destinationType) {
-        if (sourceType.equals(destinationType)) {
-            return true;
-        }
-        return false;
+        return sourceType.equals(destinationType);
     }
 
     public static boolean isTypeImported(String typeName, SymbolTable table) {
-        return table.getImports().contains(typeName);
-    }
-
-    public static boolean isMethodInSuperClass(String methodName, SymbolTable table) {
-        String superClassName = table.getSuper();
-
-        if (superClassName == null || superClassName.isEmpty()) {
-            return false;
+        List<String> imports = table.getImports();
+        for (String sublist : imports) {
+            if (sublist.contains(typeName)) {
+                return true;
+            }
         }
-
-        // Get the SymbolTable for the superclass
-
-
-        // Check if the method is present in the superclass SymbolTable
         return false;
     }
+
+    private static String findCurrentMethodName(JmmNode node) {
+        Optional<JmmNode> methodNode = node.getAncestor(Kind.METHOD_DECL);
+        if (methodNode.isPresent()) {
+            return methodNode.get().get("name");
+        } else {
+            System.out.println("Failed to find METHOD_DECL ancestor for node: " + node);
+            return "main";
+        }
+    }
+
 
 }

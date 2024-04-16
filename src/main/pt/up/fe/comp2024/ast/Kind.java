@@ -28,17 +28,11 @@ public enum Kind {
     BINARY_OP,
     CONDITIONAL_STMT,
     WHILE_STMT,
+    THIS_EXPR,
     VAR_REF_EXPR,
     BOOLEAN_LITERAL,
     INTEGER_LITERAL,
     //types
-    ARRAY_TYPE,
-    BOOLEAN_TYPE,
-    FLOAT_TYPE,
-    DOUBLE_TYPE,
-    STRING_TYPE,
-    VOID_TYPE,
-    ID_TYPE,
     INTEGER_TYPE;
 
 

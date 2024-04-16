@@ -1,5 +1,6 @@
 package pt.up.fe.comp2024.analysis.passes;
 
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
@@ -9,10 +10,8 @@ import pt.up.fe.comp2024.analysis.AnalysisVisitor;
 import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.comp2024.ast.TypeUtils;
-import pt.up.fe.specs.util.SpecsCheck;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Checks if the type of the expression in a return statement is compatible with the method return type.
@@ -20,7 +19,6 @@ import java.util.stream.Collectors;
  * @author JBispo
  */
 public class UndeclaredVariable extends AnalysisVisitor {
-
     private String currentMethod;
 
     @Override
@@ -34,12 +32,8 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.ARRAY_INITIALIZER, this::visitArrayInitializer);
         addVisit(Kind.ARRAY_ACCESS, this::visitArrayAccess);
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
-
-        /*
-
-
         addVisit(Kind.FUNCTION_CALL, this::visitFunctionCall);
-         */
+        addVisit(Kind.RETURN_STMT, this::visitReturnStmt);
     }
 
     private Void visitMethodDecl(JmmNode method, SymbolTable table) {
@@ -48,12 +42,11 @@ public class UndeclaredVariable extends AnalysisVisitor {
         } else {
             currentMethod = "main";
         }
+
         return null;
     }
 
     private Void visitVarRefExpr(JmmNode varRefExpr, SymbolTable table) {
-        SpecsCheck.checkNotNull(currentMethod, () -> "Expected current method to be set");
-
         // Check if exists a parameter or variable declaration with the same name as the variable reference
         var varRefName = varRefExpr.get("name");
 
@@ -99,6 +92,14 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         Type leftType = TypeUtils.getExprType(left, table);
         Type rightType = TypeUtils.getExprType(right, table);
+
+        if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
+            return null;
+        }
+
+        if(table.getSuper() != null  && table.getSuper().contains(leftType.getName())){
+            return null;
+        }
 
         if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
             String message = String.format("Cannot assign a value of type '%s' to a variable of type '%s'.", rightType.getName(), leftType.getName());
@@ -151,7 +152,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
         return null;
     }
 
-
     private Void visitArrayAccess(JmmNode arrayAssign, SymbolTable table) {
         JmmNode arrayRef = arrayAssign.getChildren().get(0);
         JmmNode index = arrayAssign.getChildren().get(1);
@@ -176,31 +176,77 @@ public class UndeclaredVariable extends AnalysisVisitor {
         return null;
     }
 
-    private Void visitNewObject(JmmNode newObject, SymbolTable table) {
-        String className = newObject.get("value");
-
-        // Check if the class is defined or imported
-        if (!table.getClassName().equals(className) && !table.getImports().contains(className)) {
-            addErrorReport(newObject, String.format("Class '%s' is not defined or imported.", className));
-        }
-
-        return null;
-    }
-
     private Void visitFunctionCall(JmmNode functionCall, SymbolTable table) {
+        JmmNode objectNode = functionCall.getChildren().get(0);
+        List<JmmNode> args = functionCall.getChildren().subList(1, functionCall.getNumChildren()); // Get all arguments
         String methodName = functionCall.get("value");
 
-        // Check if the function call is to a method in the current class, an imported class, or superclass
-        if (!table.getMethods().contains(methodName) &&
-                !TypeUtils.isTypeImported(methodName, table) &&
-                !TypeUtils.isMethodInSuperClass(methodName, table)) {
+        Type objectType = TypeUtils.getExprType(objectNode, table);
+
+        //verify if the classes are being imported.
+        if (TypeUtils.isTypeImported(objectType.getName(), table)) {
+            return null;
+        }
+
+        //verify if the class extends an imported class
+        if(table.getSuper() != null  && !table.getSuper().isEmpty()){
+            return null;
+        }
+
+        if (!table.getMethods().contains(methodName)) {
             addErrorReport(functionCall, String.format("Method '%s' is not defined in the current class, an imported class, or superclass.", methodName));
         }
 
+        List<Symbol> expectedParamTypes = table.getParameters(methodName);
+        boolean hasVarargs = !expectedParamTypes.isEmpty() && expectedParamTypes.get(expectedParamTypes.size() - 1).getType().hasAttribute("isVararg");
+        int minArgs = hasVarargs ? expectedParamTypes.size() - 1 : expectedParamTypes.size();
+
+        //Check if the number of provided arguments matches the expected parameters
+        if (args.size() < minArgs) {
+            addErrorReport(functionCall, String.format("Incorrect number of arguments for method '%s'. Expected at least %d, found %d.",
+                    methodName, minArgs, args.size()));
+            return null;
+        }
+
+        // Check the type of each argument against the expected type
+        for (int i = 0; i < args.size(); i++) {
+            Type argType = TypeUtils.getExprType(args.get(i), table);
+            Type expectedType = (i < expectedParamTypes.size()) ? expectedParamTypes.get(i).getType() : expectedParamTypes.get(expectedParamTypes.size() - 1).getType();
+
+            if (hasVarargs && i >= minArgs) { // Handling varargs matching for single elements and arrays
+                if (!argType.equals(new Type(expectedType.getName(), false)) && !TypeUtils.areTypesAssignable(argType, new Type(expectedType.getName(), true))) {
+                    addErrorReport(args.get(i), String.format("Type mismatch for varargs argument in method '%s': Expected type '%s' or array of '%s', found '%s'.",
+                            methodName, expectedType.getName(), expectedType.getName(), argType));
+                }
+            } else if (!TypeUtils.areTypesAssignable(argType, expectedType)) { 
+                addErrorReport(args.get(i), String.format("Type mismatch for argument %d in method '%s': Expected '%s', found '%s'.",
+                        i + 1, methodName, expectedType, argType));
+            }
+        }
+
         return null;
     }
 
+    private Void visitReturnStmt(JmmNode returnStmt, SymbolTable table) {
+        JmmNode expr = returnStmt.getChildren().get(0);
 
+        Type exprType = TypeUtils.getExprType(expr, table);
+
+        Type methodReturnType = table.getReturnType(currentMethod);
+
+        //in case it is imported
+        if (methodReturnType == null || exprType == null) {
+            return null;
+        }
+
+        if (!TypeUtils.areTypesAssignable(exprType, methodReturnType)) {
+            String message = String.format("Return type mismatch, expected %s, found %s in method %s.",
+                    methodReturnType, exprType, currentMethod);
+            addErrorReport(returnStmt, message);
+        }
+
+        return null;
+    }
 
     private void addErrorReport(JmmNode node, String message) {
         addReport(Report.newError(

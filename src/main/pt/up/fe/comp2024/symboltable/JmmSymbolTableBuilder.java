@@ -50,7 +50,7 @@ public class JmmSymbolTableBuilder {
                 result.put("main", new Type("static void", false));
                 continue;
             }
-            result.put(method.get("name"), filterType(method));
+            result.put(method.get("name"), filterType(method, false));
 
         }
         return result;
@@ -72,7 +72,7 @@ public class JmmSymbolTableBuilder {
 
             }
             else {
-                var params = method.getChildren("Params").get(0).getChildren(PARAM);
+                var params = method.getChildren("Params").get(0).getChildren();
                 var name = method.get("name");
 
                 // If method has no parameters
@@ -82,7 +82,11 @@ public class JmmSymbolTableBuilder {
                 else {
                     List<Symbol> symbols = new ArrayList<>();
                     for (var param : params) {
-                        symbols.add(new Symbol(filterType(param), param.get("name")));
+                        boolean isVarargs = "VarargsParam".equals(param.getKind());
+                        Type typeName = filterType(param, isVarargs);
+                        String paramName = param.get("name");
+
+                        symbols.add(new Symbol(typeName, paramName));
                     }
                     result.put(name, symbols);
                 }
@@ -120,7 +124,7 @@ public class JmmSymbolTableBuilder {
 
         List<Symbol> symbols = new ArrayList<>();
         for (var field : vars) {
-            symbols.add(new Symbol(filterType(field), field.get("name")));
+            symbols.add(new Symbol(filterType(field, false), field.get("name")));
         }
 
         return symbols;
@@ -155,16 +159,22 @@ public class JmmSymbolTableBuilder {
 
         List<Symbol> symbols = new ArrayList<>();
         for (var local : locals) {
-            symbols.add(new Symbol(filterType(local), local.get("name")));
+            symbols.add(new Symbol(filterType(local, false), local.get("name")));
         }
 
         return symbols;
 
     }
 
-    private static Type filterType(JmmNode node) {
+    private static Type filterType(JmmNode node, boolean isVarargs) {
         var aux = node.getChildren().get(0);
-        if (aux.getKind().equals("ArrayType")) {
+
+        if(isVarargs){
+            Type type = new Type(aux.get("value"), true);
+            type.putObject("isVararg", true);
+            return type;
+        }
+        else if (aux.getKind().equals("ArrayType")) {
             return new Type(aux.getChildren().get(0).get("value"), true);
         }
         else {
