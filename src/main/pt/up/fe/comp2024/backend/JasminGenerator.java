@@ -73,8 +73,20 @@ public class JasminGenerator {
         var className = ollirResult.getOllirClass().getClassName();
         code.append(".class ").append(className).append(NL).append(NL);
 
-        // TODO: Hardcoded to Object, needs to be expanded
-        code.append(".super java/lang/Object").append(NL);
+        // generate fields
+        var fields = ollirResult.getOllirClass().getFields();
+        for (var field : fields) {
+            code.append(".field ").append(field.getFieldName()).append(".").append(field.getFieldType().toString().toLowerCase()).append(NL);
+        }
+
+        // generate super class name
+        var extended = ollirResult.getOllirClass().getSuperClass();
+
+        if (extended != null) {
+            code.append(".super ").append(extended).append(NL);
+        } else {
+            code.append(".super java/lang/Object").append(NL);
+        }
 
         // generate a single constructor method
         var defaultConstructor = """
@@ -111,15 +123,40 @@ public class JasminGenerator {
 
         var code = new StringBuilder();
 
-        // calculate modifier
+        // modifier
         var modifier = method.getMethodAccessModifier() != AccessModifier.DEFAULT ?
                 method.getMethodAccessModifier().name().toLowerCase() + " " :
                 "";
 
-        var methodName = method.getMethodName();
 
-        // TODO: Hardcoded param types and return type, needs to be expanded
-        code.append("\n.method ").append(modifier).append(methodName).append("(I)I").append(NL);
+        var methodName = method.getMethodName();
+        var extra = method.isStaticMethod() ? "static " : method.isFinalMethod() ? "final " : "";
+
+        code.append(".method ").append(modifier).append(extra).append(methodName).append("(");
+
+        // generate parameters
+        var params = method.getParams();
+        var paramCode = new StringBuilder();
+        for (Element param : params) {
+            switch (param.getType().toString()) {
+                case "INT32" -> paramCode.append("I");
+                case "BOOLEAN" -> paramCode.append("Z");
+                case "STRING[]" -> paramCode.append("[Ljava/lang/String;");
+                default -> throw new NotImplementedException(param.getType());
+            }
+        }
+
+        code.append(paramCode).append(")");
+
+        //generate return type
+        var returnType = method.getReturnType().toString();
+        switch (returnType) {
+            case "INT32" -> code.append("I").append(NL);
+            case "BOOLEAN" -> code.append("Z").append(NL);
+            case "VOID" -> code.append("V").append(NL);
+            case "STRING[]" -> code.append("[Ljava/lang/String;").append(NL);
+            default -> throw new NotImplementedException(returnType);
+        }
 
         // Add limits
         code.append(TAB).append(".limit stack 99").append(NL);
@@ -154,6 +191,7 @@ public class JasminGenerator {
         }
 
         var operand = (Operand) lhs;
+        System.out.println("lhs "+ lhs + " rhs "+ assign.getRhs());
 
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
