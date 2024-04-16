@@ -44,6 +44,7 @@ public class JasminGenerator {
         generators.put(ClassUnit.class, this::generateClassUnit);
         generators.put(Method.class, this::generateMethod);
         generators.put(PutFieldInstruction.class, this::generatePutField);
+        generators.put(CallInstruction.class, this::generaterateCallInstruction);
         generators.put(AssignInstruction.class, this::generateAssign);
         generators.put(GetFieldInstruction.class, this::generateGetField);
         generators.put(SingleOpInstruction.class, this::generateSingleOp);
@@ -280,8 +281,18 @@ public class JasminGenerator {
         return code.toString();
     }
 
+    private String generaterateCallInstruction (CallInstruction callInstruction){
+        var code = new StringBuilder();
+        
+        code.append("invokespecial ");
+
+        code.append(NL);
+        return code.toString();
+    }
+
     private String generateAssign(AssignInstruction assign) {
         var code = new StringBuilder();
+
 
         // generate code for loading what's on the right
         code.append(generators.apply(assign.getRhs()));
