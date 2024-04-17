@@ -283,7 +283,7 @@ public class JasminGenerator {
 
     private String generaterateCallInstruction (CallInstruction callInstruction){
         var code = new StringBuilder();
-        
+
         code.append("invokespecial ");
 
         code.append(NL);
