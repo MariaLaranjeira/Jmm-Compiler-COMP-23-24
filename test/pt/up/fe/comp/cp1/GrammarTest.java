@@ -79,7 +79,7 @@ public class GrammarTest {
     }
 
     @Test
-    public void testSimpleJavaProgram_ollir() {
+    public void testSimpleJavaProgram_ollirBasic() {
         String code =
                 "import io;\n" +
                         "import Quicksort;\n" +
@@ -103,6 +103,31 @@ public class GrammarTest {
                         "    public static void main(String[] args) {\n" +
                         "    }\n" +
                         "}";
+        TestUtils.parseVerbose(code, MAIN_METHOD);
+    }
+
+    @Test
+    public void testSimpleJavaProgram_ollirAssignment() {
+        String code =
+                "import io;\n" +
+                        "import Quicksort;\n" +
+                        "\n" +
+                        "class CompileAssignment {\n" +  // Class declaration start
+                        "\n" +
+                        "    public static void main(String[] args) {\n" +  // Main method start
+                        "    }\n" +  // Main method end
+                        "\n" +
+                        "    public int foo() {\n" +  // Method start
+                        "        int a;\n" +  // Local variable declaration
+                        "        int b;\n" +  // Local variable declaration
+                        "\n" +
+                        "        b = 2;\n" +  // Assignment statement
+                        "\n" +
+                        "        a = b;\n" +  // Assignment statement
+                        "\n" +
+                        "        return 0;\n" +  // Return statement
+                        "    }\n" +  // Method end
+                        "}";  // Class declaration end
         TestUtils.parseVerbose(code, MAIN_METHOD);
     }
 

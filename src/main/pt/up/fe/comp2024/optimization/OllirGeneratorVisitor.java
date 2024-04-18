@@ -56,6 +56,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         setDefaultVisit(this::defaultVisit);
     }
 
+
+
     private String visitAssignStmt(JmmNode node, Void unused) {
 
         var lhs = exprVisitor.visit(node.getJmmChild(0));
@@ -137,57 +139,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         return code;
     }
 
-    private String visitParams(JmmNode paramsNode) {
-        StringBuilder paramsCode = new StringBuilder();
-
-        for (JmmNode param : paramsNode.getChildren()) {
-            paramsCode.append(visit(param));
-        }
-
-        return paramsCode.toString();
-    }
-
-    /*
-    private String visitMethodDecl(JmmNode node, Void unused) {
-        StringBuilder code = new StringBuilder(".method ");
-
-        boolean isPublic = NodeUtils.getBooleanAttribute(node, "isPublic", "false");
-
-        if (isPublic) {
-            code.append("public ");
-        }
-
-        // Name
-        String methodName = getMethodName(node);
-        code.append(methodName);
-
-        // Parameters
-        code.append("(");
-        JmmNode paramsNode = node.getChildren().get(0); // Assuming params are the second child
-        if (paramsNode != null) {
-            String paramsCode = visit(paramsNode);
-            code.append(paramsCode);
-        }
-        code.append(")");
-
-        // Return type
-        Type returnType = table.getReturnType(methodName);
-        code.append(OptUtils.toOllirType(returnType));
-
-        // Opening brace for method body
-        code.append(" {\n");
-
-        // Visit other children (varDecl, stmt, etc.)
-        for (int i = 2; i < node.getNumChildren(); i++) {
-            code.append(visit(node.getChildren().get(i)));
-        }
-
-        // Closing brace for method body
-        code.append("}\n");
-
-        return code.toString();
-    }
-    */
     private String visitMethodDecl(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder(".method ");
 
@@ -224,17 +175,19 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
             indentation+=1;
 
-            // Visit other children (varDecl, stmt, etc.)
+            //TODO: REVIEW IF LOCAL VARIABLES ARE NEEDED IN OLLIR STMT
+            // Visit other children (varDecl, stmt, return, etc.)
             for (int i = 2; i < node.getNumChildren(); i++) {
                 JmmNode child = node.getChildren().get(i);
                 if (child.getKind().equals("VarStmt")) {
-                    String varStmtCode = visitVarDecl(child, unused);
-                    code.append(applyIndentation(varStmtCode)); // Applying indentation
+                    //String varStmtCode = visitVarDecl(child, unused);
+                    //code.append(applyIndentation(varStmtCode)); // Applying indentation
                 } else {
                     String childCode = visit(child);
                     code.append(applyIndentation(childCode)); // Applying indentation
                 }
             }
+
 
             indentation-=1;
 
@@ -254,8 +207,11 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         // Append superclass if it exists
         var superClass = table.getSuper();
-        if (!superClass.isEmpty()) {
+        if (superClass != null) {
             code.append(" extends ").append(superClass);
+        }
+        else{
+            code.append(" extends ").append("Object");
         }
 
         code.append(L_BRACKET);
