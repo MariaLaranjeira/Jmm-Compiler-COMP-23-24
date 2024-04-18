@@ -79,7 +79,7 @@ public class GrammarTest {
     }
 
     @Test
-    public void testSimpleJavaProgram_ollir() {
+    public void testSimpleJavaProgram_ollirBasic() {
         String code =
                 "import io;\n" +
                         "import Quicksort;\n" +
@@ -105,6 +105,79 @@ public class GrammarTest {
                         "}";
         TestUtils.parseVerbose(code, MAIN_METHOD);
     }
+
+    @Test
+    public void testSimpleJavaProgram_ollirAssignment() {
+        String code =
+                "import io;\n" +
+                        "import Quicksort;\n" +
+                        "\n" +
+                        "class CompileAssignment {\n" +  // Class declaration start
+                        "\n" +
+                        "    public static void main(String[] args) {\n" +  // Main method start
+                        "    }\n" +  // Main method end
+                        "\n" +
+                        "    public int foo() {\n" +  // Method start
+                        "        int a;\n" +  // Local variable declaration
+                        "        int b;\n" +  // Local variable declaration
+                        "\n" +
+                        "        b = 2;\n" +  // Assignment statement
+                        "\n" +
+                        "        a = b;\n" +  // Assignment statement
+                        "\n" +
+                        "        return 0;\n" +  // Return statement
+                        "    }\n" +  // Method end
+                        "}";  // Class declaration end
+        TestUtils.parseVerbose(code, MAIN_METHOD);
+    }
+
+    @Test
+    public void testSimpleJavaProgram_ollirArithmetic() {
+        String code =
+                "class CompileArithmetic {\n" + // Class declaration start
+                        "\n" +
+                        "    public static void main(String[] args) {\n" + // Main method start
+                        "    }\n" + // Main method end
+                        "\n" +
+                        "    public int foo() {\n" + // Method start
+                        "        int a;\n" + // Local variable declaration
+                        "        int b;\n" + // Local variable declaration
+                        "\n" +
+                        "        a = 1;\n" + // Assignment statement
+                        "        b = 2;\n" + // Assignment statement
+                        "\n" +
+                        "        return a + b;\n" + // Return statement with arithmetic expression
+                        "    }\n" + // Method end
+                        "}\n"; // Class declaration end
+
+        TestUtils.parseVerbose(code, MAIN_METHOD);
+    }
+
+    @Test
+    public void testSimpleJavaProgram_ollirMethodInvocation() {
+        String code =
+                "import io;\n" + // Import statement
+                        "\n" +
+                        "class CompileMethodInvocation {\n" + // Class declaration start
+                        "\n" +
+                        "    public static void main(String[] args) {\n" + // Main method start
+                        "    }\n" + // Main method end
+                        "\n" +
+                        "    public int foo() {\n" + // Method start
+                        "        int a;\n" + // Local variable declaration
+                        "\n" +
+                        "        a = 1;\n" + // Assignment statement
+                        "\n" +
+                        "        io.println(a);\n" + // Method invocation statement
+                        "\n" +
+                        "        return 0;\n" + // Return statement
+                        "    }\n" + // Method end
+                        "}\n"; // Class declaration end
+
+
+        TestUtils.parseVerbose(code, MAIN_METHOD);
+    }
+
 
     @Test
     public void testInstanceMethodEmpty() {
