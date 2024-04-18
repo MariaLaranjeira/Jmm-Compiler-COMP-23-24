@@ -12,7 +12,6 @@ import static pt.up.fe.comp2024.ast.Kind.*;
  * Generates OLLIR code from JmmNodes that are expressions.
  */
 public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExprResult> {
-
     private static final String SPACE = " ";
     private static final String ASSIGN = ":=";
     private final String END_STMT = ";\n";
@@ -25,8 +24,8 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
     @Override
     protected void buildVisitor() {
-        addVisit(VAR_REF_EXPR, this::visitVarRef);
-        addVisit(BINARY_OP, this::visitBinExpr);
+        addVisit("VarRefExpr", this::visitVarRef);
+        addVisit("BinaryOp", this::visitBinExpr);
         addVisit("IntegerLiteral", this::visitInteger);
 
         setDefaultVisit(this::defaultVisit);

@@ -97,7 +97,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         StringBuilder code = new StringBuilder();
 
-        /* TODO: WORK ON ARITHMETIC (FOR NOW HARDCODED TO PASS SPECIFIC TEST)
         var expr = OllirExprResult.EMPTY;
 
         if (node.getNumChildren() > 0) {
@@ -105,9 +104,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         }
 
         code.append(expr.getComputation());
-         */
-        code.append("ret");
-        code.append(OptUtils.toOllirType(retType));
+        code.append(applyIndentation("ret" + OptUtils.toOllirType(retType)));
 
         code.append(SPACE);
 
