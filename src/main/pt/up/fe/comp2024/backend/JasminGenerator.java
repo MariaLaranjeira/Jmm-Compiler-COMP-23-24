@@ -1,5 +1,6 @@
 package pt.up.fe.comp2024.backend;
 
+import com.sun.jdi.ObjectReference;
 import org.specs.comp.ollir.*;
 import org.specs.comp.ollir.tree.TreeNode;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
@@ -284,7 +285,28 @@ public class JasminGenerator {
     private String generaterateCallInstruction (CallInstruction callInstruction){
         var code = new StringBuilder();
 
-        code.append("invokespecial ");
+
+        if (callInstruction.getOperands().size() == 1){
+
+            var tmp = callInstruction.getOperands().get(0);
+            Operand lhs = (Operand) tmp;
+            code.append("new ").append(lhs.getName());
+        }
+
+        if (callInstruction.getOperands().size() == 2) {
+
+            var tmp = callInstruction.getOperands().get(0);
+            Operand lhs = (Operand) tmp;
+            code.append(generators.apply(lhs));
+            code.append("invokespecial ");
+
+
+            code.append(ollirResult.getOllirClass().getClassName()).append("/");
+
+            code.append("<init>()V");
+
+        }
+
 
         code.append(NL);
         return code.toString();
@@ -305,12 +327,15 @@ public class JasminGenerator {
         }
 
         var operand = (Operand) lhs;
-
+        switch(operand.getType().toString()) {
+            case "INT32" -> code.append("istore ");
+            case "BOOLEAN" -> code.append("istore ");
+            default -> code.append("astore_");
+        }
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
 
-        // TODO: Hardcoded for int type, needs to be expanded
-        code.append("istore ").append(reg).append(NL);
+        code.append(reg).append(NL);
 
         return code.toString();
     }
@@ -325,7 +350,17 @@ public class JasminGenerator {
 
     private String generateOperand(Operand operand) {
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
-        return "iload " + reg + NL;
+        switch(operand.getType().toString()) {
+            case "INT32" -> {
+                return "iload " + reg + NL;
+            }
+            case "BOOLEAN" -> {
+                return "iload " + reg + NL;
+            }
+            default -> {
+                return "aload_" + reg + NL;
+            }
+        }
     }
 
     private String generateBinaryOp(BinaryOpInstruction binaryOp) {
