@@ -18,7 +18,7 @@ import java.util.Optional;
  3 -> Can't compute type for expression of kind "O KIND"
  4 -> Inconsistent types in array initializer
  5 -> Operator unknown
- 99 -> Continue
+ 99 -> Continue, imported variable
  */
 
 public class TypeUtils {
@@ -137,6 +137,11 @@ public class TypeUtils {
             if (param.getName().equals(varName)) {
                 return param.getType();
             }
+        }
+
+        // Var is imported
+        if(TypeUtils.isTypeImported(varName, table)){
+            return new Type ("99", false);
         }
 
         // If the variable is not found in either fields or locals, it's an undefined variable

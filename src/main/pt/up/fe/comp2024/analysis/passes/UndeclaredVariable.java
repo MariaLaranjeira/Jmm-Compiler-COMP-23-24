@@ -217,9 +217,9 @@ public class UndeclaredVariable extends AnalysisVisitor {
         JmmNode objectNode = functionCall.getChildren().get(0);
         List<JmmNode> args = functionCall.getChildren().subList(1, functionCall.getNumChildren()); // Get all arguments
         String methodName = functionCall.get("value");
+
         String importedVar = objectNode.get("name");
         String importedClass = TypeUtils.getExprType(objectNode, table).getName();
-
         //verify if the classes are being imported.
         if (TypeUtils.isTypeImported(importedVar, table) || TypeUtils.isTypeImported(importedClass, table) ) {
             return null;
