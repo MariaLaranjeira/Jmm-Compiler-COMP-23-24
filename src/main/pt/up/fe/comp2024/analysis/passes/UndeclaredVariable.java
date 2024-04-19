@@ -102,7 +102,14 @@ public class UndeclaredVariable extends AnalysisVisitor {
         JmmNode right = assign.getChildren().get(1);
 
         Type leftType = TypeUtils.getExprType(left, table);
-        Type rightType = TypeUtils.getExprType(right, table);
+        Type rightType;
+
+        // when it isn't direct literal assign , fetch firstchild (for example functionCall)
+        if(right.getKind().equals("ExprStmt")){
+            rightType = TypeUtils.getExprType(right.getChild(0),table);
+        } else {
+            rightType = TypeUtils.getExprType(left, table);
+        }
 
         if (Objects.equals(rightType.getName(), "99")) {
             return null;
@@ -227,6 +234,8 @@ public class UndeclaredVariable extends AnalysisVisitor {
         //verify if the classes are being imported.
         if (TypeUtils.isTypeImported(className, table)) {
             return null;
+        }else{
+            addErrorReport(functionCall, String.format("Cannot find %s (not imported)",className));
         }
 
         //verify if the class extends an imported class
@@ -238,9 +247,14 @@ public class UndeclaredVariable extends AnalysisVisitor {
             addErrorReport(functionCall, String.format("Method '%s' is not defined in the current class, an imported class, or superclass.", methodName));
         }
 
-        List<Symbol> expectedParamTypes = table.getParameters(methodName);
-        boolean hasVarargs = !expectedParamTypes.isEmpty() && expectedParamTypes.get(expectedParamTypes.size() - 1).getType().hasAttribute("isVararg");
-        int minArgs = hasVarargs ? expectedParamTypes.size() - 1 : expectedParamTypes.size();
+        boolean hasVarargs = false;
+        List<Symbol> expectedParamTypes = null;
+        int minArgs = 0;
+        if(!args.isEmpty()) {
+            expectedParamTypes = table.getParameters(methodName);
+            hasVarargs = !expectedParamTypes.isEmpty() && expectedParamTypes.get(expectedParamTypes.size() - 1).getType().hasAttribute("isVararg");
+            minArgs = hasVarargs ? expectedParamTypes.size() - 1 : expectedParamTypes.size();
+        }
 
         //Check if the number of provided arguments matches the expected parameters
         if (args.size() < minArgs) {
@@ -259,7 +273,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
                     addErrorReport(args.get(i), String.format("Type mismatch for varargs argument in method '%s': Expected type '%s' or array of '%s', found '%s'.",
                             methodName, expectedType.getName(), expectedType.getName(), argType));
                 }
-            } else if (!TypeUtils.areTypesAssignable(argType, expectedType)) { 
+            } else if (!TypeUtils.areTypesAssignable(argType, expectedType)) {
                 addErrorReport(args.get(i), String.format("Type mismatch for argument %d in method '%s': Expected '%s', found '%s'.",
                         i + 1, methodName, expectedType, argType));
             }
