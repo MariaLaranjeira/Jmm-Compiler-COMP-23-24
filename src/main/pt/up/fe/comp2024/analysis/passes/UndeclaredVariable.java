@@ -96,6 +96,15 @@ public class UndeclaredVariable extends AnalysisVisitor {
                 addErrorReport(method, "Duplicate parameter: " + param.getName());
             }
         }
+
+        // Check for duplicate local variables within the method
+        List<Symbol> localVariables = table.getLocalVariables(currentMethod);
+        Set<String> declaredLocals = new HashSet<>();
+        for (Symbol localVar : localVariables) {
+            if (!declaredLocals.add(localVar.getName())) {
+                addErrorReport(method, "Duplicate local variable: " + localVar.getName());
+            }
+        }
         return null;
     }
 
@@ -148,13 +157,13 @@ public class UndeclaredVariable extends AnalysisVisitor {
     private Void visitBinaryOp(JmmNode binaryOp, SymbolTable table) {
         Type resultType = TypeUtils.getExprType(binaryOp, table);
 
-        if (Objects.equals(resultType.getName(), "0")) {
+        if (resultType.getName().equals("0")) {
             var message = "Array type cannot be used on binary operations.";
             addErrorReport(binaryOp, message);
             return null;
         }
 
-        if (Objects.equals(resultType.getName(), "1")) {
+        if (resultType.getName().equals("1")) {
             var message = "Binary operation with incompatible types.";
             addErrorReport(binaryOp, message);
             return null;
