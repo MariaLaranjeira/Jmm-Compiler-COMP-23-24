@@ -34,9 +34,6 @@ public class TypeUtils {
         var kind = Kind.fromString(expr.getKind());
 
         return switch (kind) {
-            case INTEGER_LITERAL -> new Type("int", false);
-            case BOOLEAN_LITERAL -> new Type("boolean", false);
-            //maybe verify length later
             case LENGTH -> new Type("int", false);
             case VARARGS_PARAM -> getVarargsType(expr, table);
             case NEW_OBJECT -> getNewObjectType(expr, table);
@@ -46,6 +43,8 @@ public class TypeUtils {
             case FUNCTION_CALL -> getReturnType(expr, table);
             case THIS_EXPR -> new Type(table.getClassName(), false);
             case ARRAY_ACCESS -> getArrayAccessType(expr, table);
+            case INTEGER_LITERAL -> new Type("int", false);
+            case BOOLEAN_LITERAL -> new Type("boolean", false);
 
             default -> new Type("3", false);
         };
