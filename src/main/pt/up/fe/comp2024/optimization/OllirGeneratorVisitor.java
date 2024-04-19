@@ -156,7 +156,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     private String visitMethodDecl(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder(".method public ");
 
-        boolean isPublic = NodeUtils.getBooleanAttribute(node, "isPublic", "false");
         boolean isMain = false;
 
 
@@ -293,7 +292,9 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         importStmt.append("import ");
 
         // Extract the import value from the importDeclaration node
-        String importValue = importDeclaration.get("ID");
+        String valuesList = importDeclaration.get("value");
+
+        String importValue = valuesList.replace("[","").replace("]","").replace(",",".").replace(" ","");
 
         importStmt.append(importValue); // Append the import value directly
 
@@ -356,8 +357,16 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         }
 
 
+        boolean isClass = false;
         boolean isImported = false;
         boolean isLocalVariable = false;
+        boolean isThis = false;
+
+        String className = table.getClassName();
+
+        if(node.getChild(0).get("name").equals(className)){
+            isClass = true;
+        }
 
         //check if first parameter is in imports (hardcoded to check 1st,todo: change grammar to include params in the call)
         for(var imported : table.getImports()){
@@ -388,15 +397,15 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             first = node.getChild(0).get("name");
             code.append("invokestatic(").append(first).append(", \"").append(functionName).append("\"");
         }
-        else if(isLocalVariable){
-            first = node.getChild(0).get("name");
-            String className = node.getAncestor("ClassStmt").get().get("name");
-            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;
-        }
         else{
+            if(isLocalVariable){
+                first = node.getChild(0).get("name");
+                //String className = node.getAncestor("ClassStmt").get().get("name");
+                code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;
+            }else{
             first = "this";
-            String className = node.getAncestor("ClassStmt").get().get("name");
-            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;
+            //String className = node.getAncestor("ClassStmt").get().get("name");
+            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;}
         }
 
         if(node.getNumChildren()>1){
