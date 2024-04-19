@@ -54,8 +54,18 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit("VarStmt", this::visitVarDecl);
         addVisit("ExprStmt", this::visitExprStmt);
         addVisit("FunctionCall", this::visitFunctionCall);
+        addVisit("NewObject",this::visitNewObject);
 
         setDefaultVisit(this::defaultVisit);
+    }
+
+    private String visitNewObject(JmmNode jmmNode, Void unused) {
+        StringBuilder code = new StringBuilder();
+
+        String id = jmmNode.getJmmParent().getChild(0).get("name");
+        code.append("invokespecial(").append(OptUtils.getCurrentTemp()).append(".").append(jmmNode.get("value")).append(",\"\").V;\n");
+
+        return code.toString();
     }
 
 
@@ -86,6 +96,12 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         code.append(rhs.getCode());
 
         code.append(END_STMT);
+
+        if(node.getChild(1).getKind().equals("NewObject")){
+            code.append(applyIndentation(visit(node.getChild(1))));
+            String newVarName = node.getChild(0).get("name");
+            code.append(applyIndentation(newVarName)).append(typeString).append(SPACE).append(ASSIGN).append(typeString).append(SPACE).append(rhs.getComputation()).append(typeString).append(END_STMT);
+        }
 
         return code.toString();
     }

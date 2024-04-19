@@ -27,8 +27,40 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         addVisit("VarRefExpr", this::visitVarRef);
         addVisit("BinaryOp", this::visitBinExpr);
         addVisit("IntegerLiteral", this::visitInteger);
+        addVisit("FunctionCall", this::visitFunctionCall);
+        addVisit("NewObject", this::visitNewObject);
 
         setDefaultVisit(this::defaultVisit);
+    }
+
+    private OllirExprResult visitNewObject(JmmNode jmmNode, Void unused) {
+        StringBuilder computation = new StringBuilder();
+
+        String objectType = jmmNode.get("value");
+
+        computation.append("new(").append(objectType).append(").").append(objectType);
+        String code = OptUtils.getTemp();// + "." + objectType;
+
+        return new OllirExprResult(computation.toString(),code);
+
+    }
+
+    private OllirExprResult visitFunctionCall(JmmNode jmmNode, Void unused) {
+        OllirGeneratorVisitor visitor = new OllirGeneratorVisitor(table);
+        String visitCode = visitor.visitFunctionCall(jmmNode,unused);
+
+        StringBuilder computation = new StringBuilder();
+
+        // code to compute self
+        Type resType = TypeUtils.getExprType(jmmNode, table);
+        String resOllirType = OptUtils.toOllirType(resType);
+        String code = OptUtils.getTemp() + resOllirType;
+
+        computation.append(code).append(SPACE)
+                .append(ASSIGN).append(resOllirType).append(SPACE)
+                .append(visitCode).append(SPACE).append("\n");
+
+        return new OllirExprResult(code,computation);
     }
 
 
@@ -73,10 +105,10 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         var id = node.get("name");
         Type type = TypeUtils.getExprType(node, table);
         String ollirType = OptUtils.toOllirType(type);
-
-        String code = id + ollirType;
-
-        return new OllirExprResult(code);
+        if(ollirType.equals(".i32")||ollirType.equals(".bool")||ollirType.equals(".V")||ollirType.equals(".String")){
+            return new OllirExprResult(id+ollirType);
+        }
+        return new OllirExprResult(ollirType);
     }
 
     /**
