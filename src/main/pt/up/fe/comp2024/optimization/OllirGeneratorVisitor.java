@@ -45,12 +45,12 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         addVisit(PROGRAM, this::visitProgram);
         addVisit(CLASS_DECL, this::visitClass);
-        addVisit(METHOD_DECL, this::visitMethodDecl);
+        addVisit("MethodDecl", this::visitMethodDecl);
         addVisit(PARAM, this::visitParam);
         addVisit(RETURN_STMT, this::visitReturn);
         addVisit(ASSIGN_STMT, this::visitAssignStmt);
         addVisit("ImportStmt", this::visitImportStmt);
-        addVisit("MainMethodStmt", this::visitMainMethod);
+        //addVisit("MainMethodStmt", this::visitMainMethod);
         addVisit("VarStmt", this::visitVarDecl);
         addVisit("ExprStmt", this::visitExprStmt);
         addVisit("FunctionCall", this::visitFunctionCall);
@@ -141,16 +141,16 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder(".method ");
 
         boolean isPublic = NodeUtils.getBooleanAttribute(node, "isPublic", "false");
+        boolean isMain = false;
 
-        if (isPublic) {
-            code.append("public ");
+
+        if (!node.hasAttribute("name")){
+            isMain = true;
         }
 
         // Main method declaration (TODO: refactor from hardcoded to something more functional)
-        if (!node.hasAttribute("name")) {
+        if (isMain) {
             code.append("public static main(args.array.String).V {\n");
-            code.append("\t\tret.V;\n");
-            code.append("\t}\n");
         }
         // Normal method declaration
         else {
@@ -165,34 +165,41 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
                 }
                 String codeParams = String.join(", ", paramCodes);
                 code.append(codeParams);
+
+                code.append(")");
+                String returnName = OptUtils.toOllirType(node.getChildren().get(0));
+                code.append(returnName);
+                code.append(" {\n");
             }
-            code.append(")");
-            String returnName = OptUtils.toOllirType(node.getChildren().get(0));
-            code.append(returnName);
-            code.append(" {\n");
+        }
 
-            indentation+=1;
+        indentation+=1;
+        int i;
+        if(isMain){
+            i = 0;
+        }else{
+            i=2;
+        }
 
-            //TODO: REVIEW IF LOCAL VARIABLES ARE NEEDED IN OLLIR STMT
-            // Visit other children (varDecl, stmt, return, etc.)
-            for (int i = 2; i < node.getNumChildren(); i++) {
-                JmmNode child = node.getChildren().get(i);
-                if (child.getKind().equals("VarStmt")) {
-                    //String varStmtCode = visitVarDecl(child, unused);
-                    //code.append(applyIndentation(varStmtCode)); // Applying indentation
-                } else {
-                    String childCode = visit(child);
-                    code.append(applyIndentation(childCode)); // Applying indentation
-                }
+        for (; i < node.getNumChildren(); i++) {
+            JmmNode child = node.getChildren().get(i);
+            if (!child.getKind().equals("VarStmt")) {
+                String childCode = visit(child);
+                code.append(applyIndentation(childCode)); // Applying indentation
             }
+        }
 
+        indentation-=1;
 
-            indentation-=1;
-
+        if(isMain){
+            code.append(applyIndentation("ret.V;"));
+            code.append(applyIndentation("}"));
+        }
+        else{
             code.append(NL);//after returning normal indentation for cleaner look
             code.append(applyIndentation("}"));
-
         }
+
 
         return code.toString();
     }
@@ -279,49 +286,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         return importStmt.toString();
     }
 
-
-    /*
-    private String visitMainMethod(JmmNode methodDeclaration, Void unused) {
-        StringBuilder method = new StringBuilder();
-        method.append(".method public static main([Ljava/lang/String;).V {\n");
-
-        for (JmmNode child : methodDeclaration.getChildren()) {
-            // Ignore variable declarations
-            if (!child.getKind().equals(VAR_DECL.toString())) {
-                method.append(visit(child, unused));
-            }
-        }
-
-        method.append("}\n");
-
-        return method.toString();
-    }
-     */
-
-    private String visitMainMethod(JmmNode methodDeclaration, Void unused) {
-        StringBuilder method = new StringBuilder();
-        method.append(".method ");
-        method.append("public ");
-        List<Symbol> parameters;
-        method.append("static ");
-        method.append("main(");
-        parameters = table.getParameters("main");
-        String codeParam = parameters.stream().map(OllirGeneratorVisitor::getCode).collect(Collectors.joining(", "));
-        method.append(codeParam);
-        method.append(").V");
-
-
-        for (JmmNode child : methodDeclaration.getChildren()) {
-            if (!child.getKind().equals("VarStmt")) {
-                method.append(visit(child, unused));
-            }
-        }
-        method.append("}\n");
-
-
-        return method.toString();
-    }
-
     private String visitVarDecl(JmmNode varDeclaration, Void unused) {
 
         StringBuilder variable = new StringBuilder();
@@ -359,7 +323,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     }
 
     // TODO: needs serious refactoring. probably in grammar as distinction between the calling class and the parameters is essential
-    private String visitFunctionCall(JmmNode node, Void unused){
+    public String visitFunctionCall(JmmNode node, Void unused){
         StringBuilder code = new StringBuilder();
 
         String methodName = node.get("value");
