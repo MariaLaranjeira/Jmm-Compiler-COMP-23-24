@@ -11,8 +11,10 @@ import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.comp2024.ast.TypeUtils;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Errors Table:
@@ -34,6 +36,8 @@ public class UndeclaredVariable extends AnalysisVisitor {
     @Override
     public void buildVisitor() {
         //Declaration and reference Checks
+        addVisit(Kind.PROGRAM, this::visitProgram);
+        addVisit(Kind.CLASS_DECL, this::visitClassDecl);
         addVisit(Kind.METHOD_DECL, this::visitMethodDecl);
         addVisit(Kind.VAR_REF_EXPR, this::visitVarRefExpr);
         addVisit(Kind.BINARY_OP, this::visitBinaryOp);
@@ -47,6 +51,37 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.RETURN_STMT, this::visitReturnStmt);
     }
 
+    private Void visitProgram(JmmNode method, SymbolTable table){
+        List<String> imports = table.getImports();
+        Set<String> seenImports = new HashSet<>();
+        for (String imp : imports) {
+            if (!seenImports.add(imp)) {
+                addErrorReport(method, "Duplicate import: " + imp);
+            }
+        }
+        return null;
+    }
+
+    private Void visitClassDecl(JmmNode method, SymbolTable table){
+        // Check for duplicate fields
+        Set<String> fieldNames = new HashSet<>();
+        for (Symbol field : table.getFields()) {
+            if (!fieldNames.add(field.getName())) {
+                addErrorReport(method, "Duplicate field: " + field.getName());
+            }
+        }
+
+        // Check for duplicate methods
+        Set<String> methodNames = new HashSet<>();
+        for (String methodName : table.getMethods()) {
+            if (!methodNames.add(methodName)) {
+                addErrorReport(method, "Duplicate method: " + methodName);
+            }
+        }
+
+        return null;
+    }
+
     private Void visitMethodDecl(JmmNode method, SymbolTable table) {
         if (method.getAttributes().contains("name")) {
             currentMethod = method.get("name");
@@ -54,6 +89,13 @@ public class UndeclaredVariable extends AnalysisVisitor {
             currentMethod = "main";
         }
 
+        List<Symbol> parameters = table.getParameters(currentMethod);
+        Set<String> paramNames = new HashSet<>();
+        for (Symbol param : parameters) {
+            if (!paramNames.add(param.getName())) {
+                addErrorReport(method, "Duplicate parameter: " + param.getName());
+            }
+        }
         return null;
     }
 
