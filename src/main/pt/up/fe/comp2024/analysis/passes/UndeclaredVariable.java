@@ -195,6 +195,12 @@ public class UndeclaredVariable extends AnalysisVisitor {
             return null;
         }
 
+        if (rightType.getName().equals("6")) {
+            var message = "Can't use this in main";
+            addErrorReport(assign, message);
+            return null;
+        }
+
         if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
             return null;
         }
@@ -285,6 +291,13 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         String importedVar = objectNode.get("name");
         String importedClass = TypeUtils.getExprType(objectNode, table).getName();
+
+        if (importedClass.equals("6")) {
+            var message = "Can't use this in main";
+            addErrorReport(functionCall, message);
+            return null;
+        }
+
         //verify if the classes are being imported.
         if (TypeUtils.isTypeImported(importedVar, table) || TypeUtils.isTypeImported(importedClass, table) ) {
             return null;
