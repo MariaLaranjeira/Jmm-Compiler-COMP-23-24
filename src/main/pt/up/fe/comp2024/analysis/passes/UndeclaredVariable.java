@@ -41,6 +41,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.IF_STMT, this::visitIfStmt);
         addVisit(Kind.ARRAY_INITIALIZER, this::visitArrayInitializer);
         addVisit(Kind.ARRAY_ACCESS, this::visitArrayAccess);
+        addVisit(Kind.LENGTH, this::visitLength);
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
         addVisit(Kind.FUNCTION_CALL, this::visitFunctionCall);
         addVisit(Kind.RETURN_STMT, this::visitReturnStmt);
@@ -54,6 +55,19 @@ public class UndeclaredVariable extends AnalysisVisitor {
         }
 
         return null;
+    }
+
+    private Void visitLength(JmmNode varRefExpr, SymbolTable table){
+        JmmNode firstExpr = varRefExpr.getChildren().get(0);
+        Type exprType = TypeUtils.getExprType(firstExpr, table);
+
+        if(!exprType.isArray()){
+            var message = String.format("Variable '%s' has to be an array.", exprType.getName());
+            addErrorReport(varRefExpr, message);
+        }
+
+        return null;
+
     }
 
     private Void visitVarRefExpr(JmmNode varRefExpr, SymbolTable table) {
@@ -217,9 +231,9 @@ public class UndeclaredVariable extends AnalysisVisitor {
         JmmNode objectNode = functionCall.getChildren().get(0);
         List<JmmNode> args = functionCall.getChildren().subList(1, functionCall.getNumChildren()); // Get all arguments
         String methodName = functionCall.get("value");
+
         String importedVar = objectNode.get("name");
         String importedClass = TypeUtils.getExprType(objectNode, table).getName();
-
         //verify if the classes are being imported.
         if (TypeUtils.isTypeImported(importedVar, table) || TypeUtils.isTypeImported(importedClass, table) ) {
             return null;
