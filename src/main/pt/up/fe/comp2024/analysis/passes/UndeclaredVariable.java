@@ -12,6 +12,17 @@ import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.comp2024.ast.TypeUtils;
 
 import java.util.List;
+import java.util.Objects;
+
+/**
+ * Errors Table:
+ 0 -> Array type cannot be used on binary operation
+ 1 -> Binary operation cannot be between objects of different types
+ 2 -> If the variable is not found in either fields or locals, it's an undefined variable
+ 3 -> Can't compute type for expression of kind "O KIND"
+ 4 -> Inconsistent types in array initializer
+ 99 -> Continue as the reference is an extended or imported class
+ */
 
 /**
  * Checks if the type of the expression in a return statement is compatible with the method return type.
@@ -92,6 +103,36 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         Type leftType = TypeUtils.getExprType(left, table);
         Type rightType = TypeUtils.getExprType(right, table);
+
+        if (Objects.equals(rightType.getName(), "99")) {
+            return null;
+        }
+
+        if (Objects.equals(leftType.getName(), "3") || Objects.equals(rightType.getName(), "3")) {
+            var message = " Can't compute type for expression. ";
+            addReport(Report.newError(
+                       Stage.SEMANTIC,
+                       NodeUtils.getLine(assign),
+                       NodeUtils.getColumn(assign),
+                       message,
+                       null
+                    )
+            );
+            return null;
+        }
+
+        if (Objects.equals(leftType.getName(), "4") || Objects.equals(rightType.getName(), "4")) {
+            var message = "Inconsistent types in array initializer.";
+            addReport(Report.newError(
+                       Stage.SEMANTIC,
+                       NodeUtils.getLine(assign),
+                       NodeUtils.getColumn(assign),
+                       message,
+                       null
+                    )
+            );
+            return null;
+        }
 
         if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
             return null;
@@ -231,6 +272,44 @@ public class UndeclaredVariable extends AnalysisVisitor {
         JmmNode expr = returnStmt.getChildren().get(0);
 
         Type exprType = TypeUtils.getExprType(expr, table);
+
+        if (Objects.equals(exprType.getName(), "0")) {
+            var message = "Array type cannot be used on binary operations.";
+            addReport(Report.newError(
+                       Stage.SEMANTIC,
+                       NodeUtils.getLine(returnStmt),
+                       NodeUtils.getColumn(returnStmt),
+                       message,
+                       null
+                    )
+            );
+            return null;
+        }
+        if (Objects.equals(exprType.getName(), "1")) {
+            var message = "Binary operation with incompatible types.";
+            addReport(Report.newError(
+                       Stage.SEMANTIC,
+                       NodeUtils.getLine(returnStmt),
+                       NodeUtils.getColumn(returnStmt),
+                       message,
+                       null
+                    )
+            );
+            return null;
+        }
+
+        if (Objects.equals(exprType.getName(), "2")) {
+            var message = "Undefined variable.";
+            addReport(Report.newError(
+                       Stage.SEMANTIC,
+                       NodeUtils.getLine(returnStmt),
+                       NodeUtils.getColumn(returnStmt),
+                       message,
+                       null
+                    )
+            );
+            return null;
+        }
 
         Type methodReturnType = table.getReturnType(currentMethod);
 
