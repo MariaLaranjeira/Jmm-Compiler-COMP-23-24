@@ -209,6 +209,10 @@ public class UndeclaredVariable extends AnalysisVisitor {
             return null;
         }
 
+        if (!TypeUtils.isValidLeftValue(left)) {
+            addErrorReport(assign, "Invalid left-hand side in assignment. Must be a variable or a valid lvalue.");
+        }
+
         if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
             String message = String.format("Cannot assign a value of type '%s' to a variable of type '%s'.", rightType.getName(), leftType.getName());
             addErrorReport(assign, message);
