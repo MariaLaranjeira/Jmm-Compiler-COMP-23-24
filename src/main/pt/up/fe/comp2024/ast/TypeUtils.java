@@ -39,6 +39,7 @@ public class TypeUtils {
             case LENGTH -> new Type("int", false);
             case VARARGS_PARAM -> getVarargsType(expr, table);
             case NEW_OBJECT -> getNewObjectType(expr, table);
+            case PAREN_EXPR -> getExprType(expr.getChildren().get(0), table);
             case VAR_REF_EXPR -> getVarExprType(expr, table);
             case ARRAY_INITIALIZER -> getArrayType(expr, table);
             case BINARY_OP -> getBinExprType(expr, table);
@@ -55,6 +56,8 @@ public class TypeUtils {
     public static String getIntTypeName() {
         return "int";
     }
+
+
 
     public static Type getArrayType(JmmNode arrayInitializer, SymbolTable table) {
         Type expectedType = getExprType(arrayInitializer.getChildren().get(0), table);
