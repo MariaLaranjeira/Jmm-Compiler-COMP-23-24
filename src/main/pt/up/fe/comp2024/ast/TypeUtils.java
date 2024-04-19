@@ -36,6 +36,8 @@ public class TypeUtils {
         return switch (kind) {
             case INTEGER_LITERAL -> new Type("int", false);
             case BOOLEAN_LITERAL -> new Type("boolean", false);
+            //maybe verify length later
+            case LENGTH -> new Type("int", false);
             case VARARGS_PARAM -> getVarargsType(expr, table);
             case NEW_OBJECT -> getNewObjectType(expr, table);
             case VAR_REF_EXPR -> getVarExprType(expr, table);

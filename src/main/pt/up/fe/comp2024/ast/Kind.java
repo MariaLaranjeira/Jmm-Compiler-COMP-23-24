@@ -18,7 +18,7 @@ public enum Kind {
 
     NEW_OBJECT,
     NEW_ARRAY,
-
+    LENGTH,
     FUNCTION_CALL,
     VARARGS_PARAM,
     ARRAY_ACCESS,

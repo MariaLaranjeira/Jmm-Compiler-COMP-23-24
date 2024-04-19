@@ -36,7 +36,6 @@ methodDecl
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}'
     ;
 
-
 type
     : type '[' ']' #ArrayType
     | value = 'boolean' #BooleanType
@@ -87,12 +86,7 @@ elseStmt
     ;
 
 expr
-    : value = '!' expr #NotExpr
-    | value = INTEGER #IntegerLiteral
-    | value = ('true' | 'false') #BooleanLiteral
-    | name = 'this' #ThisExpr
-    | name = ID #VarRefExpr
-    | '(' expr ')' #ParenExpr
+    : '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray
     | 'new' value=ID '(' (expr (',' expr) *)? ')' #NewObject
     | '[' ( expr ( ',' expr )* )? ']' #ArrayInitializer
@@ -106,7 +100,7 @@ expr
     | expr op = ('&&' | '||') expr #BinaryOp
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
-    | value = 'this' #ThisExpr
+    | name = 'this' #ThisExpr
     | name = ID #VarRefExpr
     ;
 
