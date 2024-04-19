@@ -21,7 +21,6 @@ import java.util.Objects;
  2 -> If the variable is not found in either fields or locals, it's an undefined variable
  3 -> Can't compute type for expression of kind "O KIND"
  4 -> Inconsistent types in array initializer
- 99 -> Continue as the reference is an extended or imported class
  */
 
 /**
@@ -39,7 +38,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.VAR_REF_EXPR, this::visitVarRefExpr);
         addVisit(Kind.BINARY_OP, this::visitBinaryOp);
         addVisit(Kind.WHILE_STMT, this::visitWhileStmt);
-        addVisit(Kind.CONDITIONAL_STMT, this::visitIfStmt);
+        addVisit(Kind.IF_STMT, this::visitIfStmt);
         addVisit(Kind.ARRAY_INITIALIZER, this::visitArrayInitializer);
         addVisit(Kind.ARRAY_ACCESS, this::visitArrayAccess);
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
@@ -87,11 +86,18 @@ public class UndeclaredVariable extends AnalysisVisitor {
     }
 
     private Void visitBinaryOp(JmmNode binaryOp, SymbolTable table) {
-        try {
-            Type resultType = TypeUtils.getExprType(binaryOp, table);
+        Type resultType = TypeUtils.getExprType(binaryOp, table);
 
-        } catch (RuntimeException e) {
-            addErrorReport(binaryOp, e.getMessage());
+        if (Objects.equals(resultType.getName(), "0")) {
+            var message = "Array type cannot be used on binary operations.";
+            addErrorReport(binaryOp, message);
+            return null;
+        }
+
+        if (Objects.equals(resultType.getName(), "1")) {
+            var message = "Binary operation with incompatible types.";
+            addErrorReport(binaryOp, message);
+            return null;
         }
 
         return null;
@@ -110,29 +116,16 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         if (Objects.equals(leftType.getName(), "3") || Objects.equals(rightType.getName(), "3")) {
             var message = " Can't compute type for expression. ";
-            addReport(Report.newError(
-                       Stage.SEMANTIC,
-                       NodeUtils.getLine(assign),
-                       NodeUtils.getColumn(assign),
-                       message,
-                       null
-                    )
-            );
+            addErrorReport(assign, message);
             return null;
         }
 
         if (Objects.equals(leftType.getName(), "4") || Objects.equals(rightType.getName(), "4")) {
             var message = "Inconsistent types in array initializer.";
-            addReport(Report.newError(
-                       Stage.SEMANTIC,
-                       NodeUtils.getLine(assign),
-                       NodeUtils.getColumn(assign),
-                       message,
-                       null
-                    )
-            );
+            addErrorReport(assign, message);
             return null;
         }
+
 
         if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
             return null;
@@ -221,11 +214,10 @@ public class UndeclaredVariable extends AnalysisVisitor {
         JmmNode objectNode = functionCall.getChildren().get(0);
         List<JmmNode> args = functionCall.getChildren().subList(1, functionCall.getNumChildren()); // Get all arguments
         String methodName = functionCall.get("value");
-
-        String className = objectNode.get("name");
+        String classTypeName = TypeUtils.getExprType(objectNode, table).getName();
 
         //verify if the classes are being imported.
-        if (TypeUtils.isTypeImported(className, table)) {
+        if (TypeUtils.isTypeImported(classTypeName, table)) {
             return null;
         }
 
@@ -259,7 +251,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
                     addErrorReport(args.get(i), String.format("Type mismatch for varargs argument in method '%s': Expected type '%s' or array of '%s', found '%s'.",
                             methodName, expectedType.getName(), expectedType.getName(), argType));
                 }
-            } else if (!TypeUtils.areTypesAssignable(argType, expectedType)) { 
+            } else if (!TypeUtils.areTypesAssignable(argType, expectedType)) {
                 addErrorReport(args.get(i), String.format("Type mismatch for argument %d in method '%s': Expected '%s', found '%s'.",
                         i + 1, methodName, expectedType, argType));
             }
@@ -275,39 +267,19 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         if (Objects.equals(exprType.getName(), "0")) {
             var message = "Array type cannot be used on binary operations.";
-            addReport(Report.newError(
-                       Stage.SEMANTIC,
-                       NodeUtils.getLine(returnStmt),
-                       NodeUtils.getColumn(returnStmt),
-                       message,
-                       null
-                    )
-            );
+            addErrorReport(returnStmt, message);
             return null;
         }
+
         if (Objects.equals(exprType.getName(), "1")) {
             var message = "Binary operation with incompatible types.";
-            addReport(Report.newError(
-                       Stage.SEMANTIC,
-                       NodeUtils.getLine(returnStmt),
-                       NodeUtils.getColumn(returnStmt),
-                       message,
-                       null
-                    )
-            );
+            addErrorReport(returnStmt, message);
             return null;
         }
 
         if (Objects.equals(exprType.getName(), "2")) {
             var message = "Undefined variable.";
-            addReport(Report.newError(
-                       Stage.SEMANTIC,
-                       NodeUtils.getLine(returnStmt),
-                       NodeUtils.getColumn(returnStmt),
-                       message,
-                       null
-                    )
-            );
+            addErrorReport(returnStmt, message);
             return null;
         }
 

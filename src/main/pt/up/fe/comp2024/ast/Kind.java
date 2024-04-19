@@ -26,7 +26,7 @@ public enum Kind {
 
     ASSIGN_STMT,
     BINARY_OP,
-    CONDITIONAL_STMT,
+    IF_STMT,
     WHILE_STMT,
     THIS_EXPR,
     VAR_REF_EXPR,
@@ -36,7 +36,7 @@ public enum Kind {
     INTEGER_TYPE;
 
 
-    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, WHILE_STMT, CONDITIONAL_STMT);
+    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, WHILE_STMT);
     private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_OP, INTEGER_TYPE, VAR_REF_EXPR);
 
     private final String name;

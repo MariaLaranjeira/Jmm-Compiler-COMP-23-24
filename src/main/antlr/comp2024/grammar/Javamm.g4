@@ -69,7 +69,7 @@ params
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
-    | ifStmt (elseIfStmt)* (elseStmt) #ConditionalStmt
+    | ifStmt (elseStmt)* #ConditionalStmt
     | 'while' '(' expr ')' stmt #WhileStmt
     | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
@@ -81,9 +81,6 @@ ifStmt
     : 'if' '(' expr ')' stmt
     ;
 
-elseIfStmt
-    : 'else if' '(' expr ')' stmt
-    ;
 
 elseStmt
     : 'else' stmt
@@ -93,7 +90,7 @@ expr
     : value = '!' expr #NotExpr
     | value = INTEGER #IntegerLiteral
     | value = ('true' | 'false') #BooleanLiteral
-    | value = 'this' #ThisExpr
+    | name = 'this' #ThisExpr
     | name = ID #VarRefExpr
     | '(' expr ')' #ParenExpr
     | 'new' 'int' '[' expr ']' #NewArray

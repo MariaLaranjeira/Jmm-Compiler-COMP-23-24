@@ -4,6 +4,8 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
+import pt.up.fe.comp.jmm.report.Report;
+import pt.up.fe.comp.jmm.report.Stage;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +17,8 @@ import java.util.Optional;
  2 -> If the variable is not found in either fields or locals, it's an undefined variable
  3 -> Can't compute type for expression of kind "O KIND"
  4 -> Inconsistent types in array initializer
- 99 -> Continue as the reference is an extended or imported class
+ 5 -> Operator unknown
+ 99 -> Continue imported
  */
 
 public class TypeUtils {
@@ -51,8 +54,8 @@ public class TypeUtils {
     }
 
     public static Type getArrayType(JmmNode arrayInitializer, SymbolTable table) {
-
         Type expectedType = getExprType(arrayInitializer.getChildren().get(0), table);
+
         for (JmmNode child : arrayInitializer.getChildren()) {
             Type childType = getExprType(child, table);
             if (!childType.equals(expectedType)) {
@@ -93,20 +96,19 @@ public class TypeUtils {
             case "==", "!=", "<", ">", "<=", ">=" ->
                     new Type("boolean", false);
             default ->
-                    throw new RuntimeException("Unknown operator '" + operator + "' of expression '" + binaryExpr + "'");
+                    new Type("5", false);
         };
     }
 
     private static Type getReturnType(JmmNode functionCall, SymbolTable table) {
-
         String methodName = functionCall.get("value");
+        Type returnType = table.getReturnType(methodName);
 
-        String varName = functionCall.getChild(0).get("name");
-        if (table.getImports().contains(varName) && (table.getSuper() != null && table.getSuper().equals(varName))) {
-            return new Type("99", false);
+        if(returnType == null){
+            return new Type ("99", false);
         }
 
-        return table.getReturnType(methodName);
+        return returnType;
 
     }
 
@@ -167,8 +169,9 @@ public class TypeUtils {
 
     public static boolean isTypeImported(String typeName, SymbolTable table) {
         List<String> imports = table.getImports();
-        for (String sublist : imports) {
-            if (sublist.contains(typeName)) {
+
+        for (String imported : imports) {
+            if (imported.equals(typeName)) {
                 return true;
             }
         }
