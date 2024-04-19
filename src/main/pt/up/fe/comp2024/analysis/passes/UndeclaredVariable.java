@@ -254,8 +254,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         //Check if the number of provided arguments matches the expected parameters
         if (args.size() < minArgs) {
-            addErrorReport(functionCall, String.format("Incorrect number of arguments for method '%s'. Expected at least %d, found %d.",
-                    methodName, minArgs, args.size()));
+            addErrorReport(functionCall, String.format("Incorrect number of arguments for method '%s'. Expected at least %d, found %d.", methodName, minArgs, args.size()));
             return null;
         }
 
@@ -264,14 +263,13 @@ public class UndeclaredVariable extends AnalysisVisitor {
             Type argType = TypeUtils.getExprType(args.get(i), table);
             Type expectedType = (i < expectedParamTypes.size()) ? expectedParamTypes.get(i).getType() : expectedParamTypes.get(expectedParamTypes.size() - 1).getType();
 
-            if (hasVarargs && i >= minArgs) { // Handling varargs matching for single elements and arrays
+            if (hasVarargs && i >= minArgs) {
                 if (!argType.equals(new Type(expectedType.getName(), false)) && !TypeUtils.areTypesAssignable(argType, new Type(expectedType.getName(), true))) {
-                    addErrorReport(args.get(i), String.format("Type mismatch for varargs argument in method '%s': Expected type '%s' or array of '%s', found '%s'.",
-                            methodName, expectedType.getName(), expectedType.getName(), argType));
+                    addErrorReport(args.get(i), String.format("Type mismatch for varargs argument in method '%s': Expected type '%s' or array of '%s', found '%s'.", methodName, expectedType.getName(), expectedType.getName(), argType));
                 }
-            } else if (!TypeUtils.areTypesAssignable(argType, expectedType)) {
-                addErrorReport(args.get(i), String.format("Type mismatch for argument %d in method '%s': Expected '%s', found '%s'.",
-                        i + 1, methodName, expectedType, argType));
+            }
+            else if (!TypeUtils.areTypesAssignable(argType, expectedType)) {
+                addErrorReport(args.get(i), String.format("Type mismatch for argument %d in method '%s': Expected '%s', found '%s'.", i + 1, methodName, expectedType, argType));
             }
         }
 
