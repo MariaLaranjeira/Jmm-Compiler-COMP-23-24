@@ -84,7 +84,7 @@ public class JasminGenerator {
 
         String defaultConstructor;
 
-        if (extended != null) {
+        if (extended != null && !extended.equals("Object")) {
             code.append(".super ").append(extended).append(NL);
             defaultConstructor = """
                 ;default constructor
@@ -144,7 +144,6 @@ public class JasminGenerator {
 
 
     private String generateMethod(Method method) {
-
         // set method
         currentMethod = method;
 
@@ -189,6 +188,7 @@ public class JasminGenerator {
         code.append(TAB).append(".limit stack 99").append(NL);
         code.append(TAB).append(".limit locals 99").append(NL);
 
+        System.out.println(method.getInstructions());
         for (var inst : method.getInstructions()) {
             var instCode = StringLines.getLines(generators.apply(inst)).stream()
                     .collect(Collectors.joining(NL + TAB, TAB, NL));
@@ -249,8 +249,7 @@ public class JasminGenerator {
         code.append(generators.apply(putField.getOperands().get(2)));
 
         code.append("putfield ");
-
-
+        
         var fc = putField.getOperands().get(0).getType();
         String fieldClass = "";
         if (fc != null) {
@@ -285,7 +284,6 @@ public class JasminGenerator {
     private String generaterateCallInstruction (CallInstruction callInstruction){
         var code = new StringBuilder();
 
-
         if (callInstruction.getOperands().size() == 1){
 
             var tmp = callInstruction.getOperands().get(0);
@@ -293,7 +291,8 @@ public class JasminGenerator {
             code.append("new ").append(lhs.getName());
         }
 
-        if (callInstruction.getOperands().size() == 2) {
+
+        if (callInstruction.getOperands().size() > 1 && !callInstruction.getOperands().get(0).toString().contains("CLASS")) {
 
             var tmp = callInstruction.getOperands().get(0);
             Operand lhs = (Operand) tmp;
@@ -305,6 +304,13 @@ public class JasminGenerator {
 
             code.append("<init>()V");
 
+        } else if (callInstruction.getOperands().size() > 1 ) {
+            code.append("invokestatic ");
+            Operand lhs = (Operand) callInstruction.getOperands().get(0);
+            code.append(lhs.getName()).append("/");
+            LiteralElement le = (LiteralElement) callInstruction.getOperands().get(1);
+            code.append(le.getLiteral(), 1, le.getLiteral().length() - 1);
+            code.append("()V");
         }
 
 
