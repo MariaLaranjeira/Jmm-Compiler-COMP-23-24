@@ -168,6 +168,7 @@ public class JasminGenerator {
                 case "VOID" -> paramCode.append("V");
                 case "SHORT" -> paramCode.append("S");
                 case "ARRAYREF" -> paramCode.append("[");
+                case "CLASS" -> paramCode.append("L");
                 default -> throw new NotImplementedException(param.getType());
             }
         }
