@@ -52,10 +52,11 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit("ImportStmt", this::visitImportStmt);
         addVisit("MainMethodStmt", this::visitMainMethod);
         addVisit("VarStmt", this::visitVarDecl);
+        addVisit("ExprStmt", this::visitExprStmt);
+        addVisit("FunctionCall", this::visitFunctionCall);
 
         setDefaultVisit(this::defaultVisit);
     }
-
 
 
     private String visitAssignStmt(JmmNode node, Void unused) {
@@ -263,22 +264,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         return code.toString();
     }
 
-    /**
-     * Default visitor. Visits every child node and return an empty string.
-     *
-     * @param node
-     * @param unused
-     * @return
-     */
-    private String defaultVisit(JmmNode node, Void unused) {
-
-        for (var child : node.getChildren()) {
-            visit(child);
-        }
-
-        return "";
-    }
-
     private String visitImportStmt(JmmNode importDeclaration, Void unused) {
 
         StringBuilder importStmt = new StringBuilder();
@@ -364,6 +349,90 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         return variable.toString();
     }
 
+    private String visitExprStmt(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+        var firstChild = node.getChild(0);
+        if(firstChild.getKind().equals("FunctionCall")){
+            code.append(visit(firstChild,unused));
+        }
+        return code.toString(); //TODO: complete with other exprstmt, to be defined in exprgenerator
+    }
+
+    // TODO: needs serious refactoring. probably in grammar as distinction between the calling class and the parameters is essential
+    private String visitFunctionCall(JmmNode node, Void unused){
+        StringBuilder code = new StringBuilder();
+
+        String methodName = node.get("value");
+        String first;
+        String returnCode;
+
+        Type returnType = table.getReturnType(methodName);
+
+        if(returnType!=null){
+            returnCode = OptUtils.toOllirType(returnType);
+        }
+        else{
+            returnCode = ".V";
+        }
+
+
+        boolean isImported = false;
+
+        //check if first parameter is in imports (hardcoded to check 1st,todo: change grammar to include params in the call)
+        for(var imported : table.getImports()){
+            if (node.getChild(0).get("name").equals(imported)) {
+                isImported = true;
+                break;
+            }
+        }
+
+        //construct initial code, excluding parameters
+        if(isImported){
+            first = node.getChild(0).get("name");
+            code.append("invokestatic(").append(first).append(", \"").append(methodName).append("\"");
+        }
+        else{
+            first = "this";
+            String className = node.getAncestor("ClassStmt").get().get("name");
+            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(methodName).append("\"");;
+        }
+
+        if(node.getNumChildren()>1){
+            code.append(",");
+            for (int i = 1; i < node.getNumChildren(); i++) {
+                JmmNode child = node.getChild(i);
+                code.append(child.get("name"));
+                code.append(getVarType(child.get("name"),child));
+            }
+        }
+
+        code.append(")");
+        code.append(returnCode);
+        code.append(";");
+
+        return code.toString();
+
+    }
+
+
+
+    /**
+     * Default visitor. Visits every child node and return an empty string.
+     *
+     * @param node
+     * @param unused
+     * @return
+     */
+    private String defaultVisit(JmmNode node, Void unused) {
+
+        for (var child : node.getChildren()) {
+            visit(child);
+        }
+
+        return "";
+    }
+
+
     // Utility Functions -------------------------------------------
 
     public static String getCode(Symbol symbol) {
@@ -384,6 +453,57 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             return node.get("methodName");
 
         return "main";
+    }
+
+    private String getVarType(String nome, JmmNode id) {
+        String methodName = getMethodName(id);
+
+        //check if is imported (always return .v type)
+        for(var imported : table.getImports()){
+            if (nome.equals(imported)) {
+                return ".v";
+            }
+        }
+
+        if (nome.equals(table.getClassName())) {
+            return "." + nome;
+        }
+
+        if (nome.equals("boolean") || nome.equals("false") || nome.equals("true")) {
+            return ".bool";
+        }
+
+        for (String method : table.getMethods()) {
+            if (methodName.equals(method) || methodName.equals("")) {
+                for (Symbol symbol : table.getParameters(method))
+                    if (nome.equals(symbol.getName()))
+                        return OptUtils.toOllirType(symbol.getType());
+
+                for (Symbol symbol : table.getLocalVariables(method))
+                    if (nome.equals(symbol.getName())) {
+                        return OptUtils.toOllirType(symbol.getType());
+                    }
+            }
+        }
+
+        for (Symbol symbol : table.getFields())
+            if (nome.equals(symbol.getName())) {
+                return OptUtils.toOllirType(symbol.getType());
+            }
+
+
+        return ".i32"; // int
+    }
+
+    private Type getInputType(String methodName, String funcInput) {
+        for (var m : table.getMethods()) {
+            for (Symbol v : table.getLocalVariables(m)) {
+                if (v.getName().equals(funcInput)) {
+                    return v.getType();
+                }
+            }
+        }
+        return null;
     }
 
 }

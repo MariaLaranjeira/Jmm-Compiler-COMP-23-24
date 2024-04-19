@@ -178,6 +178,34 @@ public class GrammarTest {
         TestUtils.parseVerbose(code, MAIN_METHOD);
     }
 
+    @Test
+    public void testSimpleJavaProgram_ollirMethodInvocation_2() {
+        String code =
+                "import io;\n" + // Import statement
+                        "\n" + // Empty line
+                        "class CompileMethodInvocation {\n" + // Class declaration start
+                        "\n" + // Empty line
+                        "    public static void main(String[] args) {\n" + // Main method start
+                        "    }\n" + // Main method end
+                        "\n" + // Empty line
+                        "    public int bar(int a){\n" + // Method bar declaration start
+                        "        return a;\n" + // Return statement
+                        "    }\n" + // Method bar declaration end
+                        "\n" + // Empty line
+                        "    public int foo() {\n" + // Method foo declaration start
+                        "        int a;\n" + // Local variable declaration
+                        "\n" + // Empty line
+                        "        a = 1;\n" + // Assignment statement
+                        "\n" + // Empty line
+                        "        this.bar(a);\n" + // Method call
+                        "\n" + // Empty line
+                        "        return 0;\n" + // Return statement
+                        "    }\n" + // Method foo declaration end
+                        "}\n"; // Class declaration end
+
+
+        TestUtils.parseVerbose(code, MAIN_METHOD);
+    }
 
     @Test
     public void testInstanceMethodEmpty() {
