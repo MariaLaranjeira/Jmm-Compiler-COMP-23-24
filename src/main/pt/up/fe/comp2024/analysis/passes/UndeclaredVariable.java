@@ -78,6 +78,10 @@ public class UndeclaredVariable extends AnalysisVisitor {
             return null;
         }
 
+        if(TypeUtils.isTypeImported(varRefName, table)){
+            return null;
+        }
+
         // Create error report
         var message = String.format("Variable '%s' does not exist.", varRefName);
         addErrorReport(varRefExpr, message);
@@ -125,7 +129,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
             addErrorReport(assign, message);
             return null;
         }
-
 
         if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
             return null;

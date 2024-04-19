@@ -181,7 +181,17 @@ public class TypeUtils {
     private static String findCurrentMethodName(JmmNode node) {
         Optional<JmmNode> methodNode = node.getAncestor(Kind.METHOD_DECL);
         if (methodNode.isPresent()) {
-            return methodNode.get().get("name");
+            JmmNode mNode = methodNode.get();
+
+            boolean isMain = mNode.getOptional("static").isPresent() && "void".equals(mNode.get("type"));
+
+            if (mNode.getAttributes().contains("name")) {
+                return mNode.get("name");
+            } else {
+                System.out.println("Method node does not contain 'name' attribute: " + mNode);
+                return "main";
+            }
+
         } else {
             System.out.println("Failed to find METHOD_DECL ancestor for node: " + node);
             return "main";
