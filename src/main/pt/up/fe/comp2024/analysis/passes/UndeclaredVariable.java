@@ -195,12 +195,22 @@ public class UndeclaredVariable extends AnalysisVisitor {
             return null;
         }
 
+        if (rightType.getName().equals("6")) {
+            var message = "Can't use this in main";
+            addErrorReport(assign, message);
+            return null;
+        }
+
         if(TypeUtils.isTypeImported(leftType.getName(), table) && TypeUtils.isTypeImported(rightType.getName(), table)){
             return null;
         }
 
         if(table.getSuper() != null  && table.getSuper().contains(leftType.getName())){
             return null;
+        }
+
+        if (!TypeUtils.isValidLeftValue(left)) {
+            addErrorReport(assign, "Invalid left-hand side in assignment. Must be a variable or a valid lvalue.");
         }
 
         if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
@@ -285,6 +295,13 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         String importedVar = objectNode.get("name");
         String importedClass = TypeUtils.getExprType(objectNode, table).getName();
+
+        if (importedClass.equals("6")) {
+            var message = "Can't use this in main";
+            addErrorReport(functionCall, message);
+            return null;
+        }
+
         //verify if the classes are being imported.
         if (TypeUtils.isTypeImported(importedVar, table) || TypeUtils.isTypeImported(importedClass, table) ) {
             return null;
@@ -329,7 +346,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
     private Void visitReturnStmt(JmmNode returnStmt, SymbolTable table) {
         JmmNode expr = returnStmt.getChildren().get(0);
-
         Type exprType = TypeUtils.getExprType(expr, table);
 
         if (Objects.equals(exprType.getName(), "0")) {
@@ -346,6 +362,12 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         if (Objects.equals(exprType.getName(), "2")) {
             var message = "Undefined variable.";
+            addErrorReport(returnStmt, message);
+            return null;
+        }
+
+        if (exprType.getName().equals("6")) {
+            var message = "Can't use this in main";
             addErrorReport(returnStmt, message);
             return null;
         }

@@ -8,6 +8,7 @@ import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.Stage;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -18,6 +19,7 @@ import java.util.Optional;
  3 -> Can't compute type for expression of kind "O KIND"
  4 -> Inconsistent types in array initializer
  5 -> Operator unknown
+ 6 -> This in main class invalid
  99 -> Continue, imported variable
  */
 
@@ -37,11 +39,12 @@ public class TypeUtils {
             case LENGTH -> new Type("int", false);
             case VARARGS_PARAM -> getVarargsType(expr, table);
             case NEW_OBJECT -> getNewObjectType(expr, table);
+            case PAREN_EXPR -> getExprType(expr.getChildren().get(0), table);
             case VAR_REF_EXPR -> getVarExprType(expr, table);
             case ARRAY_INITIALIZER -> getArrayType(expr, table);
             case BINARY_OP -> getBinExprType(expr, table);
             case FUNCTION_CALL -> getReturnType(expr, table);
-            case THIS_EXPR -> new Type(table.getClassName(), false);
+            case THIS_EXPR -> getThisType(expr, table);
             case ARRAY_ACCESS -> getArrayAccessType(expr, table);
             case INTEGER_LITERAL -> new Type("int", false);
             case BOOLEAN_LITERAL -> new Type("boolean", false);
@@ -53,6 +56,8 @@ public class TypeUtils {
     public static String getIntTypeName() {
         return "int";
     }
+
+
 
     public static Type getArrayType(JmmNode arrayInitializer, SymbolTable table) {
         Type expectedType = getExprType(arrayInitializer.getChildren().get(0), table);
@@ -73,6 +78,14 @@ public class TypeUtils {
 
         return new Type(arrayType.getName(), false);
     }
+
+    private static Type getThisType(JmmNode binaryExpr, SymbolTable table) {
+        String className = table.getClassName();
+        if(className.equals("main"))
+            return new Type("6", false);
+        return new Type(table.getClassName(), false);
+    }
+
 
     private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table) {
         String operator = binaryExpr.get("op");
@@ -182,6 +195,11 @@ public class TypeUtils {
             }
         }
         return false;
+    }
+
+    public static boolean isValidLeftValue(JmmNode node) {
+        String nodeKind = node.getKind();
+        return (nodeKind.equals("VarRefExpr")) ;
     }
 
     private static String findCurrentMethodName(JmmNode node) {
