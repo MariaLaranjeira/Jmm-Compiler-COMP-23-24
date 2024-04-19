@@ -154,7 +154,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     }
 
     private String visitMethodDecl(JmmNode node, Void unused) {
-        StringBuilder code = new StringBuilder(".method ");
+        StringBuilder code = new StringBuilder(".method public ");
 
         boolean isPublic = NodeUtils.getBooleanAttribute(node, "isPublic", "false");
         boolean isMain = false;
@@ -166,7 +166,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         // Main method declaration (TODO: refactor from hardcoded to something more functional)
         if (isMain) {
-            code.append("public static main(args.array.String).V {\n");
+            code.append("static main(args.array.String).V {\n");
         }
         // Normal method declaration
         else {
@@ -266,7 +266,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder();
         code.append(".construct ").append(table.getClassName()).append("().V {\n");
         indentation += 1;
-        code.append(applyIndentation("invokespecial(this, \"<init>\").V;"));
+        code.append(applyIndentation("invokespecial(this,\"\").V;"));
         code.append(NL);
         indentation -= 1;
         code.append(applyIndentation(R_BRACKET));
@@ -342,11 +342,11 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     public String visitFunctionCall(JmmNode node, Void unused){
         StringBuilder code = new StringBuilder();
 
-        String methodName = node.get("value");
+        String functionName = node.get("value");
         String first;
         String returnCode;
 
-        Type returnType = table.getReturnType(methodName);
+        Type returnType = table.getReturnType(functionName);
 
         if(returnType!=null){
             returnCode = OptUtils.toOllirType(returnType);
@@ -357,6 +357,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
 
         boolean isImported = false;
+        boolean isLocalVariable = false;
 
         //check if first parameter is in imports (hardcoded to check 1st,todo: change grammar to include params in the call)
         for(var imported : table.getImports()){
@@ -366,25 +367,50 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             }
         }
 
+        String methodName;
+        JmmNode ancestorMethodNode = node.getAncestor("MethodDecl").get();
+        if(ancestorMethodNode.hasAttribute("name")){
+            methodName = ancestorMethodNode.get("name");
+        }else{
+            methodName = "main";
+        }
+
+
+        for(var variable : table.getLocalVariables(methodName)){
+            if(variable.getName().equals(node.getChild(0).get("name"))){
+                isLocalVariable = true;
+                break;
+            }
+        }
+
         //construct initial code, excluding parameters
         if(isImported){
             first = node.getChild(0).get("name");
-            code.append("invokestatic(").append(first).append(", \"").append(methodName).append("\"");
+            code.append("invokestatic(").append(first).append(", \"").append(functionName).append("\"");
+        }
+        else if(isLocalVariable){
+            first = node.getChild(0).get("name");
+            String className = node.getAncestor("ClassStmt").get().get("name");
+            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;
         }
         else{
             first = "this";
             String className = node.getAncestor("ClassStmt").get().get("name");
-            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(methodName).append("\"");;
+            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;
         }
 
         if(node.getNumChildren()>1){
-            code.append(",");
+            code.append(", ");
             for (int i = 1; i < node.getNumChildren(); i++) {
                 JmmNode child = node.getChild(i);
                 code.append(child.get("name"));
                 code.append(getVarType(child.get("name"),child));
+                if(i != node.getNumChildren()-1){
+                    code.append(", ");
+                }
             }
         }
+
 
         code.append(")");
         code.append(returnCode);
@@ -421,7 +447,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     // Define a function to apply current indentation to a string
     private String applyIndentation(String str) {
-        return "\t".repeat(Math.max(0, indentation)) + str; //intellij tips
+        //return "\t".repeat(Math.max(0, indentation)) + str; //intellij tips
+        return str;
     }
 
     public String getMethodName(JmmNode node) {

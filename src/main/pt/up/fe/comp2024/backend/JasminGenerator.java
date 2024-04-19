@@ -448,7 +448,22 @@ public class JasminGenerator {
         // apply operation
         var op = switch (binaryOp.getOperation().getOpType()) {
             case ADD -> "iadd";
+            case SUB -> "isub";
             case MUL -> "imul";
+            case DIV -> "idiv";
+            case XOR -> "ixor";
+            case AND, ANDB -> "iand";
+            case OR, ORB -> "ior";
+            case NOTB, NOT -> "iconst_1\nixor";
+            case EQ -> "if_icmpeq ";
+            case NEQ -> "if_icmpne ";
+            case SHR -> "ishr";
+            case SHL -> "ishl";
+            case SHRR -> "iushr";
+            case LTH -> "if_icmplt ";
+            case GTH -> "if_icmpgt ";
+            case LTE -> "if_icmple ";
+            case GTE -> "if_icmpge ";
             default -> throw new NotImplementedException(binaryOp.getOperation().getOpType());
         };
 

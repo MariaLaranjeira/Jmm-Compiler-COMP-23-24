@@ -37,7 +37,7 @@ public class OllirTest {
         testJmmCompilation("pt/up/fe/comp/cp2/ollir/CompileAssignment.jmm", this::compileAssignment);
     }
 
-    /*TODO: REMOVE TESTS TO VISUALIZE OLLIR OUTPUT
+    /*//TODO: REMOVE TESTS TO VISUALIZE OLLIR OUTPUT
     @Test
     public void compileSimple(){
         testJmmCompilation("pt/up/fe/comp/cp2/ollir/CompileSimple.jmm", this::compileAssignment);
