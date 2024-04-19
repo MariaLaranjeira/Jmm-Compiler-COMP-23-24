@@ -136,9 +136,6 @@ public class JasminGenerator {
             code.append(generators.apply(method));
         }
 
-        //System.out.println(code);
-
-
         return code.toString();
     }
 
@@ -207,6 +204,10 @@ public class JasminGenerator {
     private String generateGetField(GetFieldInstruction getField) {
         var code = new StringBuilder();
 
+        Operand op = getField.getObject();
+        String prev = generateOperand(op);
+        code.append(prev);
+
         code.append("getfield ");
 
         var fc = getField.getOperands().get(0).getType();
@@ -243,7 +244,9 @@ public class JasminGenerator {
     private String generatePutField(PutFieldInstruction putField) {
         var code = new StringBuilder();
 
-        code.append("aload_0").append(NL);
+        Operand op = putField.getObject();
+        String prev = generateOperand(op);
+        code.append(prev);
 
         code.append(generators.apply(putField.getOperands().get(2)));
 
@@ -273,9 +276,6 @@ public class JasminGenerator {
             case "BOOLEAN" -> code.append(" Z");
             default -> throw new NotImplementedException(tmp.getType());
         }
-
-        code.append(NL).append("aload_0").append(NL);
-
 
         return code.toString();
     }
