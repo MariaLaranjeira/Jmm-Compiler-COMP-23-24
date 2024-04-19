@@ -30,6 +30,10 @@ public class OptUtils {
         return tempNumber;
     }
 
+    public static String getCurrentTemp(){
+        return "tmp" + tempNumber;
+    }
+
     public static String toOllirType(JmmNode typeNode) {
 
         TYPE.checkOrThrow(typeNode);
@@ -61,7 +65,7 @@ public class OptUtils {
             case "boolean" -> "bool";
             case "void", "static void" -> "V";
             case "String" -> "String";
-            default -> throw new NotImplementedException(typeName);
+            default -> typeName;
         };
 
         return type;
