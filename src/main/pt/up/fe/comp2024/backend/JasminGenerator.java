@@ -165,6 +165,9 @@ public class JasminGenerator {
                 case "INT32" -> paramCode.append("I");
                 case "BOOLEAN" -> paramCode.append("Z");
                 case "STRING[]" -> paramCode.append("[Ljava/lang/String;");
+                case "VOID" -> paramCode.append("V");
+                case "SHORT" -> paramCode.append("S");
+                case "ARRAYREF" -> paramCode.append("[");
                 default -> throw new NotImplementedException(param.getType());
             }
         }
@@ -178,6 +181,8 @@ public class JasminGenerator {
             case "BOOLEAN" -> code.append("Z").append(NL);
             case "VOID" -> code.append("V").append(NL);
             case "STRING[]" -> code.append("[Ljava/lang/String;").append(NL);
+            case "SHORT" -> code.append("S").append(NL);
+            case "ARRAYREF" -> code.append("[").append(NL);
             default -> throw new NotImplementedException(returnType);
         }
 
@@ -318,6 +323,8 @@ public class JasminGenerator {
                         case "BOOLEAN" -> "Z";
                         case "STRING[]" -> "[Ljava/lang/String;";
                         case "VOID" -> "V";
+                        case "SHORT" -> "S";
+                        case "ARRAYREF" -> "[";
                         default -> throw new NotImplementedException(paramType);
                     };
                     code.append(paramTypeAppend);
@@ -330,6 +337,8 @@ public class JasminGenerator {
                     case "BOOLEAN" -> "Z";
                     case "VOID" -> "V";
                     case "SHORT" -> "S";
+                    case "ARRAYREF" -> "[";
+                    case "STRING[]" -> "[Ljava/lang/String;";
                     default -> throw new NotImplementedException(returnType);
                 };
                 code.append(returnTypeAppend);
@@ -353,6 +362,8 @@ public class JasminGenerator {
                         case "BOOLEAN" -> "Z";
                         case "STRING[]" -> "[Ljava/lang/String;";
                         case "VOID" -> "V";
+                        case "SHORT" -> "S";
+                        case "ARRAYREF" -> "[";
                         default -> throw new NotImplementedException(paramType);
                     };
                     code.append(paramTypeAppend);
@@ -365,6 +376,8 @@ public class JasminGenerator {
                     case "BOOLEAN" -> "Z";
                     case "VOID" -> "V";
                     case "SHORT" -> "S";
+                    case "ARRAYREF" -> "[";
+                    case "STRING[]" -> "[Ljava/lang/String;";
                     default -> throw new NotImplementedException(returnType2);
                 };
                 code.append(returnTypeAppend2);
