@@ -18,7 +18,7 @@ import java.util.Optional;
  3 -> Can't compute type for expression of kind "O KIND"
  4 -> Inconsistent types in array initializer
  5 -> Operator unknown
- 99 -> Continue imported
+ 99 -> Continue
  */
 
 public class TypeUtils {
