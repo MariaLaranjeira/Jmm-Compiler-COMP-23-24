@@ -8,6 +8,16 @@ import pt.up.fe.comp.jmm.ast.JmmNode;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Errors Table:
+ 0 -> Array type cannot be used on binary operation
+ 1 -> Binary operation cannot be between objects of different types
+ 2 -> If the variable is not found in either fields or locals, it's an undefined variable
+ 3 -> Can't compute type for expression of kind "O KIND"
+ 4 -> Inconsistent types in array initializer
+ 99 -> Continue as the reference is an extended or imported class
+ */
+
 public class TypeUtils {
 
     /**
@@ -32,7 +42,7 @@ public class TypeUtils {
             case THIS_EXPR -> new Type(table.getClassName(), false);
             case ARRAY_ACCESS -> getArrayAccessType(expr, table);
 
-            default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
+            default -> new Type("3", false);
         };
     }
 
@@ -46,8 +56,7 @@ public class TypeUtils {
         for (JmmNode child : arrayInitializer.getChildren()) {
             Type childType = getExprType(child, table);
             if (!childType.equals(expectedType)) {
-                throw new RuntimeException("Inconsistent types in array initializer: found type "
-                        + childType.getName() + " but expected " + expectedType.getName());
+                return new Type("4", false);
             }
         }
 
@@ -71,11 +80,11 @@ public class TypeUtils {
         Type rightType = getExprType(rightNode, table);
 
         if(leftType.isArray() || rightType.isArray()){
-            throw new RuntimeException("Arrays cannot be used in arithmetic operations");
+            return new Type("0", false);
         }
 
         if (!leftType.equals(rightType)) {
-            throw new RuntimeException("Type mismatch between operands of expression '" + binaryExpr + "'");
+            return new Type("1", false);
         }
 
         return switch (operator) {
@@ -89,8 +98,16 @@ public class TypeUtils {
     }
 
     private static Type getReturnType(JmmNode functionCall, SymbolTable table) {
+
         String methodName = functionCall.get("value");
+
+        String varName = functionCall.getChild(0).get("name");
+        if (table.getImports().contains(varName) && (table.getSuper() != null && table.getSuper().equals(varName))) {
+            return new Type("99", false);
+        }
+
         return table.getReturnType(methodName);
+
     }
 
     private static Type getVarExprType(JmmNode varRefExpr, SymbolTable table) {
@@ -121,7 +138,7 @@ public class TypeUtils {
         }
 
         // If the variable is not found in either fields or locals, it's an undefined variable
-        throw new RuntimeException("Variable '" + varName + "' is not defined in the symbol table");
+        return new Type("2", false);
     }
 
     private static Type getNewObjectType(JmmNode expr, SymbolTable table) {
