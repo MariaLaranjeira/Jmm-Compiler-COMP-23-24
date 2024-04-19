@@ -292,16 +292,20 @@ public class JasminGenerator {
 
         switch (invokeType) {
             case "NEW":
-                var tmp = callInstruction.getOperands().get(0);
+                var tmp = callInstruction.getCaller();
                 Operand lhs = (Operand) tmp;
                 code.append("new ").append(lhs.getName()).append(NL).append("dup");
                 break;
             case "invokespecial":
-                var tmp2 = callInstruction.getOperands().get(0);
+                var tmp2 = callInstruction.getCaller();
                 Operand lhs2 = (Operand) tmp2;
                 code.append(generators.apply(lhs2));
                 code.append("invokespecial ");
-                code.append(ollirResult.getOllirClass().getClassName()).append("/");
+
+                var callerClass = lhs2.getType().toString();
+                code.append(callerClass,10,callerClass.length()-1).append("/");
+
+                //code.append(ollirResult.getOllirClass().getClassName()).append("/");
                 code.append("<init>()V");
                 break;
             case "invokestatic":
@@ -311,7 +315,7 @@ public class JasminGenerator {
                 }
                 code.append(NL);
                 code.append("invokestatic ");
-                Operand lhs3 = (Operand) callInstruction.getOperands().get(0);
+                Operand lhs3 = (Operand) callInstruction.getCaller();
                 code.append(lhs3.getName()).append("/");
                 LiteralElement le = (LiteralElement) callInstruction.getOperands().get(1);
                 code.append(le.getLiteral(), 1, le.getLiteral().length() - 1);
@@ -352,7 +356,17 @@ public class JasminGenerator {
                     code.append(generators.apply(arg));
                 }
                 code.append("invokevirtual ");
-                code.append(ollirResult.getOllirClass().getClassName()).append("/");
+
+                var callerClass2 = callerOp.getType().toString();
+                if (callerClass2.contains("OBJECTREF")) {
+                    code.append(callerClass2,10,callerClass2.length()-1).append("/");
+                } else if (callerClass2.contains("THIS")) {
+                    code.append(callerClass2,5,callerClass2.length()-1).append("/");
+                } else if (callerClass2.contains("CLASS")){
+                    code.append(callerClass2,6,callerClass2.length()-1).append("/");
+                }
+
+                //code.append(ollirResult.getOllirClass().getClassName()).append("/");
                 LiteralElement le2 = (LiteralElement) callInstruction.getOperands().get(1);
                 code.append(le2.getLiteral(), 1, le2.getLiteral().length() - 1);
                 code.append("(");
