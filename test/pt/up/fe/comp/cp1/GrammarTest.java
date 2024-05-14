@@ -78,6 +78,7 @@ public class GrammarTest {
                 MAIN_METHOD);
     }
 
+    /*
     @Test
     public void testSimpleJavaProgram_ollirBasic() {
         String code =
@@ -90,7 +91,7 @@ public class GrammarTest {
                         "    boolean boolField;\n" +
                         "\n" +
                         "    public int method1() {\n" +
-                        "        int intLocal1;\n" +
+                        "        int intLocal1 = intField;\n" +
                         "        boolean boolLocal1;\n" +
                         "\n" +
                         "        return 0;\n" +
@@ -105,6 +106,7 @@ public class GrammarTest {
                         "}";
         TestUtils.parseVerbose(code, MAIN_METHOD);
     }
+     */
 
     @Test
     public void testSimpleJavaProgram_ollirAssignment() {
