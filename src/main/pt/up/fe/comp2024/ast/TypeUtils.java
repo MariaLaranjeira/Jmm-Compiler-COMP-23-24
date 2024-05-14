@@ -197,6 +197,11 @@ public class TypeUtils {
         return false;
     }
 
+    public static boolean isValidLeftValue(JmmNode node) {
+        String nodeKind = node.getKind();
+        return (nodeKind.equals("VarRefExpr")) ;
+    }
+
     private static String findCurrentMethodName(JmmNode node) {
         Optional<JmmNode> methodNode = node.getAncestor(Kind.METHOD_DECL);
         if (methodNode.isPresent()) {

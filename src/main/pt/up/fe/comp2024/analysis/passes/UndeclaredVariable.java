@@ -32,6 +32,7 @@ import java.util.Set;
  */
 public class UndeclaredVariable extends AnalysisVisitor {
     private String currentMethod;
+    private boolean currentMethodIsStatic;
 
     @Override
     public void buildVisitor() {
@@ -88,6 +89,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
         } else {
             currentMethod = "main";
         }
+        currentMethodIsStatic = method.getOptional("static").isPresent();
 
         List<Symbol> parameters = table.getParameters(currentMethod);
         Set<String> paramNames = new HashSet<>();
@@ -124,6 +126,11 @@ public class UndeclaredVariable extends AnalysisVisitor {
     private Void visitVarRefExpr(JmmNode varRefExpr, SymbolTable table) {
         // Check if exists a parameter or variable declaration with the same name as the variable reference
         var varRefName = varRefExpr.get("name");
+
+        if ("this".equals(varRefName) && currentMethodIsStatic) {
+            addErrorReport(varRefExpr, "'this' cannot be used in static context such as the 'main' method.");
+        }
+        
 
         // Var is a field, return
         if (table.getFields().stream()
@@ -207,6 +214,10 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         if(table.getSuper() != null  && table.getSuper().contains(leftType.getName())){
             return null;
+        }
+
+        if (!TypeUtils.isValidLeftValue(left)) {
+            addErrorReport(assign, "Invalid left-hand side in assignment. Must be a variable or a valid lvalue.");
         }
 
         if (!TypeUtils.areTypesAssignable(rightType, leftType)) {
@@ -342,7 +353,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
     private Void visitReturnStmt(JmmNode returnStmt, SymbolTable table) {
         JmmNode expr = returnStmt.getChildren().get(0);
-
         Type exprType = TypeUtils.getExprType(expr, table);
 
         if (Objects.equals(exprType.getName(), "0")) {
@@ -359,6 +369,12 @@ public class UndeclaredVariable extends AnalysisVisitor {
 
         if (Objects.equals(exprType.getName(), "2")) {
             var message = "Undefined variable.";
+            addErrorReport(returnStmt, message);
+            return null;
+        }
+
+        if (exprType.getName().equals("6")) {
+            var message = "Can't use this in main";
             addErrorReport(returnStmt, message);
             return null;
         }
