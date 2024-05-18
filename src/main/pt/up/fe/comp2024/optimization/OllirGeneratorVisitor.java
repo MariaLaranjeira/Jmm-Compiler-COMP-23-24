@@ -44,58 +44,224 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     protected void buildVisitor() {
 
         addVisit(PROGRAM, this::visitProgram);
-        addVisit(CLASS_DECL, this::visitClass);
-        addVisit("MethodDecl", this::visitMethodDecl);
+        addVisit("ImportStmt", this::visitImportStmt);
+        addVisit("ClassStmt", this::visitClass);
+        addVisit("VarDecl", this::visitVarDecl);
+        addVisit(METHOD_DECL, this::visitMethodDecl);
+
         addVisit(PARAM, this::visitParam);
         addVisit(RETURN_STMT, this::visitReturn);
         addVisit(ASSIGN_STMT, this::visitAssignStmt);
-        addVisit("ImportStmt", this::visitImportStmt);
+
         //addVisit("MainMethodStmt", this::visitMainMethod);
-        addVisit("VarStmt", this::visitVarDecl);
         addVisit("ExprStmt", this::visitExprStmt);
         addVisit("FunctionCall", this::visitFunctionCall);
-        addVisit("NewObject",this::visitNewObject);
+        addVisit("ArrayAccess", this::visitArrayAccess);
+        addVisit("ArrayAssignStmt", this::visitArrayAssign);
+        addVisit("ArrayRef",this::visitArrayRef);
 
         setDefaultVisit(this::defaultVisit);
     }
 
-    private String visitNewObject(JmmNode jmmNode, Void unused) {
+    //DONE
+    private String visitProgram(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder();
 
-        String id = jmmNode.getJmmParent().getChild(0).get("name");
-        code.append("invokespecial(").append(OptUtils.getCurrentTemp()).append(".").append(jmmNode.get("value")).append(",\"\").V;\n");
+        node.getChildren().stream()
+                .map(this::visit)
+                .forEach(code::append);
+
+        return code.toString();
+    }
+
+    //DONE
+    private String visitImportStmt(JmmNode importDeclaration, Void unused) {
+        StringBuilder importStmt = new StringBuilder();
+        importStmt.append("import ");
+
+        for (String singleImport : table.getImports()) {
+            if (singleImport.contains(importDeclaration.get("ID"))) {
+                importStmt.append(singleImport);
+            }
+        }
+
+        importStmt.append(";\n");
+
+        return importStmt.toString();
+    }
+
+    //DONE - (MAIS AO MENOS)
+    private String visitClass(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+        // Append class name
+        code.append(table.getClassName());
+
+        // Append superclass if it exists
+        var superClass = table.getSuper();
+
+        if (superClass != null) {
+            code.append(" extends ").append(superClass);
+        }
+
+        code.append(L_BRACKET);
+
+        for (var child : node.getChildren()) {
+            if(child.getKind().equals("VarDecl")){
+                //VarDecl
+                var result = visit(child);
+                code.append(result);
+            }
+            else{
+                //ClassStmt
+                code.append(visit(child));
+                code.append(NL);
+            }
+        }
+
+        code.append(buildConstructor());
+        code.append(R_BRACKET);
+
+        return code.toString();
+    }
+
+    //Done (mais ao menos - analisar melhor as situações)
+    private String visitVarDecl(JmmNode varDeclaration, Void unused) {
+        StringBuilder variable = new StringBuilder();
+        JmmNode parent = varDeclaration.getJmmParent();
+
+        if (parent.getKind().equals("ClassStmt")) {
+            //if parent is classStmt add field public to string
+            variable.append(".field public ");
+        }
+        String name = varDeclaration.get("name");
+        String type = OptUtils.toOllirType(varDeclaration.getJmmChild(0));
+
+        variable.append(name);
+        variable.append(type);
+        variable.append(";\n");
+
+        return variable.toString();
+    }
+
+    private String visitMethodDecl(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder(".method public ");
+        boolean isMain = node.getKind().equals("MainMethodDecl");
+
+        // Main method declaration
+        if (isMain) {
+            code.append("static main(args.array.String).V {\n");
+        }
+
+        // Normal method declaration
+        else {
+            code.append(node.get("name")).append("(");
+
+            //Parameters
+            List<Symbol> parameters = table.getParameters(getMethodName(node));
+
+            if (!parameters.isEmpty()) {
+                List<String> paramCodes = new ArrayList<>();
+                for (Symbol param : parameters) {
+                    paramCodes.add(OptUtils.getCode(param));
+                }
+                code.append(String.join(", ", paramCodes));
+            }
+            code.append(")");
+            String returnName = OptUtils.toOllirType(table.getReturnType(getMethodName(node)));
+            code.append(returnName).append(" {\n");
+        }
+
+
+        for (int i = isMain ? 0 : 2; i < node.getNumChildren(); i++) {
+            JmmNode child = node.getChildren().get(i);
+            if (!child.getKind().equals("VarStmt")) {
+                String childCode = visit(child);
+                code.append(applyIndentation(childCode)); // Applying indentation
+            }
+        }
+
+
+        if(isMain){
+            code.append(applyIndentation("ret.V;"));
+            code.append(applyIndentation("}"));
+        }
+        else{
+            code.append(NL);//after returning normal indentation for cleaner look
+            code.append(applyIndentation("}"));
+        }
 
         return code.toString();
     }
 
 
-    private String visitAssignStmt(JmmNode node, Void unused) {
+    private String visitArrayAccess(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
 
+        var array = exprVisitor.visit(node.getJmmChild(0));
+        var index = exprVisitor.visit(node.getJmmChild(1));
+
+        // Generate the array access code
+        code.append(array.getComputation())
+                .append(index.getComputation())
+                .append(array.getCode()).append("[")
+                .append(index.getCode())
+                .append("]");
+
+        return code.toString();
+    }
+
+    private String visitArrayAssign(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+
+        var array = exprVisitor.visit(node.getJmmChild(0));
+        var index = exprVisitor.visit(node.getJmmChild(1));
+        var value = exprVisitor.visit(node.getJmmChild(2));
+
+        // Generate the array assignment code
+        code.append(array.getComputation())
+                .append(index.getComputation())
+                .append(value.getComputation())
+                .append(array.getCode()).append("[")
+                .append(index.getCode())
+                .append("] := ")
+                .append(value.getCode())
+                .append(";\n");
+
+        return code.toString();
+    }
+
+    private String visitArrayRef(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+
+        var array = exprVisitor.visit(node.getJmmChild(0));
+
+        // Generate the array reference code
+        code.append(array.getCode());
+
+        return code.toString();
+    }
+
+    private String visitAssignStmt(JmmNode node, Void unused) {
         var lhs = exprVisitor.visit(node.getJmmChild(0));
         var rhs = exprVisitor.visit(node.getJmmChild(1));
 
         StringBuilder code = new StringBuilder();
 
         // code to compute the children
-        code.append(lhs.getComputation());
-        code.append(rhs.getComputation());
+        code.append(lhs.getComputation())
+                .append(rhs.getComputation())
+                .append(lhs.getCode()).append(SPACE)
+                .append(ASSIGN);
 
         // code to compute self
         // statement has type of lhs
         Type thisType = TypeUtils.getExprType(node.getJmmChild(0), table);
         String typeString = OptUtils.toOllirType(thisType);
 
-
-        code.append(lhs.getCode());
-        code.append(SPACE);
-
-        code.append(ASSIGN);
-        code.append(typeString);
-        code.append(SPACE);
-
-        code.append(rhs.getCode());
-
-        code.append(END_STMT);
+        code.append(typeString)
+                .append(SPACE)
+                .append(rhs.getCode())
+                .append(END_STMT);
 
         if(node.getChild(1).getKind().equals("NewObject")){
             code.append(applyIndentation(visit(node.getChild(1))));
@@ -113,7 +279,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         Type retType = table.getReturnType(methodName);
 
         StringBuilder code = new StringBuilder();
-
         var expr = OllirExprResult.EMPTY;
 
         if (node.getNumChildren() > 0) {
@@ -122,7 +287,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         code.append(expr.getComputation());
         code.append(applyIndentation("ret" + OptUtils.toOllirType(retType)));
-
         code.append(SPACE);
 
         if (!node.getChildren().isEmpty()) {
@@ -144,190 +308,23 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
 
     private String visitParam(JmmNode node, Void unused) {
-
         var typeCode = OptUtils.toOllirType(node.getJmmChild(0));
         var id = node.get("name");
 
-        String code = id + typeCode;
-
-        return code;
-    }
-
-    private String visitMethodDecl(JmmNode node, Void unused) {
-        StringBuilder code = new StringBuilder(".method public ");
-
-        boolean isMain = false;
-
-
-        if (!node.hasAttribute("name")){
-            isMain = true;
-        }
-
-        // Main method declaration (TODO: refactor from hardcoded to something more functional)
-        if (isMain) {
-            code.append("static main(args.array.String).V {\n");
-        }
-        // Normal method declaration
-        else {
-            code.append(node.get("name"));
-            code.append("(");
-            JmmNode paramsNode = node.getChildren().get(1); // Assuming params are the first child
-            if (paramsNode != null) {
-                List<String> paramCodes = new ArrayList<>();
-                for (JmmNode param : paramsNode.getChildren()) {
-                    String codeParam = visit(param);
-                    paramCodes.add(codeParam);
-                }
-                String codeParams = String.join(", ", paramCodes);
-                code.append(codeParams);
-
-                code.append(")");
-                String returnName = OptUtils.toOllirType(node.getChildren().get(0));
-                code.append(returnName);
-                code.append(" {\n");
-            }
-        }
-
-        indentation+=1;
-        int i;
-        if(isMain){
-            i = 0;
-        }else{
-            i=2;
-        }
-
-        for (; i < node.getNumChildren(); i++) {
-            JmmNode child = node.getChildren().get(i);
-            if (!child.getKind().equals("VarStmt")) {
-                String childCode = visit(child);
-                code.append(applyIndentation(childCode)); // Applying indentation
-            }
-        }
-
-        indentation-=1;
-
-        if(isMain){
-            code.append(applyIndentation("ret.V;"));
-            code.append(applyIndentation("}"));
-        }
-        else{
-            code.append(NL);//after returning normal indentation for cleaner look
-            code.append(applyIndentation("}"));
-        }
-
-
-        return code.toString();
-    }
-
-    private String visitClass(JmmNode node, Void unused) {
-        StringBuilder code = new StringBuilder();
-
-        // Append class name
-        code.append(table.getClassName());
-
-        // Append superclass if it exists
-        var superClass = table.getSuper();
-        if (superClass != null) {
-            code.append(" extends ").append(superClass);
-        }
-        else{
-            code.append(" extends ").append("Object");
-        }
-
-        code.append(L_BRACKET);
-        //code.append(NL);
-
-        indentation+=1; //augment indentation
-
-        for (var child : node.getChildren()) {
-            //dont separate varstmt with newlines
-            if(child.getKind().equals("VarStmt")){
-                var result = visit(child);
-                code.append(applyIndentation(result));
-            }
-            else{
-                var result = visit(child);
-                code.append(applyIndentation(result));
-                code.append(NL);
-            }
-        }
-
-        code.append(applyIndentation(buildConstructor()));
-
-        indentation-=1; //restore initial indentation
-
-        code.append(applyIndentation(R_BRACKET));
-
-        return code.toString();
+        return id + typeCode;
     }
 
     private String buildConstructor() {
         StringBuilder code = new StringBuilder();
         code.append(".construct ").append(table.getClassName()).append("().V {\n");
-        indentation += 1;
-        code.append(applyIndentation("invokespecial(this,\"\").V;"));
+        indentation++;
+        code.append(applyIndentation("invokespecial(this,\"<init>\").V;"));
         code.append(NL);
-        indentation -= 1;
+        indentation --;
         code.append(applyIndentation(R_BRACKET));
 
 
         return code.toString();
-    }
-
-
-    private String visitProgram(JmmNode node, Void unused) {
-
-        StringBuilder code = new StringBuilder();
-
-        node.getChildren().stream()
-                .map(this::visit)
-                .forEach(code::append);
-
-        return code.toString();
-    }
-
-    private String visitImportStmt(JmmNode importDeclaration, Void unused) {
-
-        StringBuilder importStmt = new StringBuilder();
-        importStmt.append("import ");
-
-        // Extract the import value from the importDeclaration node
-        String valuesList = importDeclaration.get("value");
-
-        String importValue = valuesList.replace("[","").replace("]","").replace(",",".").replace(" ","");
-
-        importStmt.append(importValue); // Append the import value directly
-
-        importStmt.append(";\n");
-
-        return importStmt.toString();
-    }
-
-    private String visitVarDecl(JmmNode varDeclaration, Void unused) {
-
-        StringBuilder variable = new StringBuilder();
-
-        JmmNode parent = varDeclaration.getJmmParent();
-        if (parent.getKind().equals("ClassStmt")) {
-            //if parent is classstmt add field public to string
-            variable.append(".field public ");
-
-            String name = varDeclaration.get("name");
-            String type = OptUtils.toOllirType(varDeclaration.getJmmChild(0));
-
-            variable.append(name);
-            variable.append(type);
-            variable.append(";\n");
-        } else {
-            String name = varDeclaration.get("name");
-            String type = OptUtils.toOllirType(varDeclaration.getJmmChild(0));
-
-            variable.append(name);
-            variable.append(type);
-            variable.append(";\n");
-        }
-
-        return variable.toString();
     }
 
     private String visitExprStmt(JmmNode node, Void unused) {
@@ -338,6 +335,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         }
         return code.toString(); //TODO: complete with other exprstmt, to be defined in exprgenerator
     }
+
 
     // TODO: needs serious refactoring. probably in grammar as distinction between the calling class and the parameters is essential
     public String visitFunctionCall(JmmNode node, Void unused){
@@ -355,7 +353,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         else{
             returnCode = ".V";
         }
-
 
         boolean isClass = false;
         boolean isImported = false;
@@ -420,13 +417,11 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             }
         }
 
-
         code.append(")");
         code.append(returnCode);
         code.append(";");
 
         return code.toString();
-
     }
 
 

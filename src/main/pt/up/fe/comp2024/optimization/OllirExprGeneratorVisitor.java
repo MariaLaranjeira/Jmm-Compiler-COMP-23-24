@@ -15,7 +15,6 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
     private static final String SPACE = " ";
     private static final String ASSIGN = ":=";
     private final String END_STMT = ";\n";
-
     private final SymbolTable table;
 
     public OllirExprGeneratorVisitor(SymbolTable table) {
@@ -39,7 +38,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         String objectType = jmmNode.get("value");
 
         computation.append("new(").append(objectType).append(").").append(objectType);
-        String code = OptUtils.getTemp();// + "." + objectType;
+        String code = OptUtils.getTemp(); // + "." + objectType;
 
         return new OllirExprResult(computation.toString(),code);
 
@@ -101,13 +100,15 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
 
     private OllirExprResult visitVarRef(JmmNode node, Void unused) {
-
         var id = node.get("name");
+
         Type type = TypeUtils.getExprType(node, table);
         String ollirType = OptUtils.toOllirType(type);
-        if(ollirType.equals(".i32")||ollirType.equals(".bool")||ollirType.equals(".V")||ollirType.equals(".String")){
-            return new OllirExprResult(id+ollirType);
+
+        if(ollirType.equals(".i32") || ollirType.equals(".bool") || ollirType.equals(".V") || ollirType.equals(".String")){
+            return new OllirExprResult(id + ollirType);
         }
+
         return new OllirExprResult(ollirType);
     }
 

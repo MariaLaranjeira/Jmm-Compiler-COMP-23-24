@@ -37,6 +37,7 @@ public class TypeUtils {
 
         return switch (kind) {
             case LENGTH -> new Type("int", false);
+
             case VARARGS_PARAM -> getVarargsType(expr, table);
             case NEW_OBJECT -> getNewObjectType(expr, table);
             case PAREN_EXPR -> getExprType(expr.getChildren().get(0), table);
@@ -46,6 +47,7 @@ public class TypeUtils {
             case FUNCTION_CALL -> getReturnType(expr, table);
             case THIS_EXPR -> getThisType(expr, table);
             case ARRAY_ACCESS -> getArrayAccessType(expr, table);
+            case NEW_ARRAY -> new Type("int", true);
             case INTEGER_LITERAL -> new Type("int", false);
             case BOOLEAN_LITERAL -> new Type("boolean", false);
 
@@ -56,7 +58,6 @@ public class TypeUtils {
     public static String getIntTypeName() {
         return "int";
     }
-
 
 
     public static Type getArrayType(JmmNode arrayInitializer, SymbolTable table) {
@@ -130,18 +131,18 @@ public class TypeUtils {
         String varName = varRefExpr.get("name");
         String currentMethod = findCurrentMethodName(varRefExpr);
 
-        //Var is a field
-        for (Symbol field : table.getFields()) {
-            if (field.getName().equals(varName)) {
-                return field.getType();
-            }
-        }
-
         //Var is a local variable
         List<Symbol> locals = table.getLocalVariables(currentMethod);
         for (Symbol local : locals) {
             if (local.getName().equals(varName)) {
                 return local.getType();
+            }
+        }
+
+        //Var is a field
+        for (Symbol field : table.getFields()) {
+            if (field.getName().equals(varName)) {
+                return field.getType();
             }
         }
 
@@ -221,6 +222,4 @@ public class TypeUtils {
             return "main";
         }
     }
-
-
 }

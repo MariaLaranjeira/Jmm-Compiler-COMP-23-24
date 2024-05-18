@@ -1,6 +1,7 @@
 package pt.up.fe.comp2024.optimization;
 
 import org.specs.comp.ollir.Instruction;
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2024.ast.NodeUtils;
@@ -14,6 +15,10 @@ import static pt.up.fe.comp2024.ast.Kind.TYPE;
 public class OptUtils {
     private static int tempNumber = -1;
 
+    public static String getCode(Symbol symbol) {
+        return symbol.getName() + toOllirType(symbol.getType());
+    }
+
     public static String getTemp() {
 
         return getTemp("tmp");
@@ -25,7 +30,6 @@ public class OptUtils {
     }
 
     public static int getNextTempNum() {
-
         tempNumber += 1;
         return tempNumber;
     }
@@ -38,18 +42,7 @@ public class OptUtils {
 
         TYPE.checkOrThrow(typeNode);
 
-        // Check if the type node represents the "int" type
-        if (typeNode.getKind().equals("IntegerType")) {
-            return ".i32";
-        }
-        else if (typeNode.getKind().equals("BooleanType")){
-            return ".bool";
-        }
-        else if (typeNode.getKind().equals("VoidType")){
-            return ".V";
-        }
-
-        String typeName = typeNode.get("name");
+        String typeName = typeNode.get("value");
 
         return toOllirType(typeName);
     }
@@ -60,15 +53,13 @@ public class OptUtils {
 
     private static String toOllirType(String typeName) {
 
-        String type = "." + switch (typeName) {
+        return "." + switch (typeName) {
             case "int" -> "i32";
             case "boolean" -> "bool";
             case "void", "static void" -> "V";
             case "String" -> "String";
             default -> typeName;
         };
-
-        return type;
     }
 
 

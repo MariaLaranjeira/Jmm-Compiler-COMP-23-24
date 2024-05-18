@@ -32,7 +32,6 @@ import java.util.Set;
  */
 public class UndeclaredVariable extends AnalysisVisitor {
     private String currentMethod;
-    private boolean currentMethodIsStatic;
 
     @Override
     public void buildVisitor() {
@@ -42,8 +41,8 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.METHOD_DECL, this::visitMethodDecl);
         addVisit(Kind.VAR_REF_EXPR, this::visitVarRefExpr);
         addVisit(Kind.BINARY_OP, this::visitBinaryOp);
-        addVisit(Kind.WHILE_STMT, this::visitWhileStmt);
-        addVisit(Kind.IF_STMT, this::visitIfStmt);
+        addVisit(Kind.WHILE_STMT, this::visitConditionStmt);
+        addVisit(Kind.IF_STMT, this::visitConditionStmt);
         addVisit(Kind.ARRAY_INITIALIZER, this::visitArrayInitializer);
         addVisit(Kind.ARRAY_ACCESS, this::visitArrayAccess);
         addVisit(Kind.LENGTH, this::visitLength);
@@ -89,7 +88,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
         } else {
             currentMethod = "main";
         }
-        currentMethodIsStatic = method.getOptional("static").isPresent();
 
         List<Symbol> parameters = table.getParameters(currentMethod);
         Set<String> paramNames = new HashSet<>();
@@ -127,10 +125,9 @@ public class UndeclaredVariable extends AnalysisVisitor {
         // Check if exists a parameter or variable declaration with the same name as the variable reference
         var varRefName = varRefExpr.get("name");
 
-        if ("this".equals(varRefName) && currentMethodIsStatic) {
+        if ("this".equals(varRefName) && currentMethod.equals("main")) {
             addErrorReport(varRefExpr, "'this' cannot be used in static context such as the 'main' method.");
         }
-        
 
         // Var is a field, return
         if (table.getFields().stream()
@@ -191,20 +188,17 @@ public class UndeclaredVariable extends AnalysisVisitor {
         }
 
         if (Objects.equals(leftType.getName(), "3") || Objects.equals(rightType.getName(), "3")) {
-            var message = " Can't compute type for expression. ";
-            addErrorReport(assign, message);
+            addErrorReport(assign, "Can't compute type for expression. ");
             return null;
         }
 
         if (Objects.equals(leftType.getName(), "4") || Objects.equals(rightType.getName(), "4")) {
-            var message = "Inconsistent types in array initializer.";
-            addErrorReport(assign, message);
+            addErrorReport(assign, "Inconsistent types in array initializer.");
             return null;
         }
 
         if (rightType.getName().equals("6")) {
-            var message = "Can't use this in main";
-            addErrorReport(assign, message);
+            addErrorReport(assign, "Can't use this in main");
             return null;
         }
 
@@ -213,6 +207,11 @@ public class UndeclaredVariable extends AnalysisVisitor {
         }
 
         if(table.getSuper() != null  && table.getSuper().contains(leftType.getName())){
+            return null;
+        }
+
+        if (currentMethod.equals("main") && isVariableFromOutside(left, table)) {
+            addErrorReport(assign,  "Cannot assign a variable from outside in the static main function.");
             return null;
         }
 
@@ -229,23 +228,25 @@ public class UndeclaredVariable extends AnalysisVisitor {
         return null;
     }
 
-    private Void visitIfStmt(JmmNode ifStmt, SymbolTable table) {
-        JmmNode condition = ifStmt.getChildren().get(0);
-        Type conditionType = TypeUtils.getExprType(condition, table);
+    private boolean isVariableFromOutside(JmmNode varNode, SymbolTable table) {
+        String varName = varNode.get("name");
 
-        if (!conditionType.getName().equals("boolean")) {
-            addErrorReport(ifStmt, "Condition expression must be boolean, found type '" + conditionType + "'");
+        List<Symbol> locals = table.getLocalVariables(currentMethod);
+
+        for (Symbol local : locals) {
+            if (local.getName().equals(varName)) {
+                return false;
+            }
         }
-
-        return null;
+        return true;
     }
 
-    private Void visitWhileStmt(JmmNode whileStmt, SymbolTable table) {
-        JmmNode condition = whileStmt.getChildren().get(0);
+    private Void visitConditionStmt(JmmNode stmt, SymbolTable table) {
+        JmmNode condition = stmt.getChildren().get(0);
         Type conditionType = TypeUtils.getExprType(condition, table);
 
-        if (!conditionType.getName().equals("boolean")) {
-            addErrorReport(whileStmt, "Condition expression must be boolean, found type '" + conditionType + "'");
+        if (!conditionType.getName().equals("boolean") || conditionType.isArray()) {
+            addErrorReport(stmt, "Condition expression type incorrect");
         }
 
         return null;
@@ -286,9 +287,8 @@ public class UndeclaredVariable extends AnalysisVisitor {
         }
 
         // Check if the index is an integer
-        if (!indexType.getName().equals("int")) {
-            String message = "Array index must be an integer.";
-            addErrorReport(index, message);
+        if (!indexType.getName().equals("int") || indexType.isArray()) {
+            addErrorReport(index, "Array index must be an integer.");
             return null;
         }
 
@@ -304,8 +304,7 @@ public class UndeclaredVariable extends AnalysisVisitor {
         String importedClass = TypeUtils.getExprType(objectNode, table).getName();
 
         if (importedClass.equals("6")) {
-            var message = "Can't use this in main";
-            addErrorReport(functionCall, message);
+            addErrorReport(functionCall, "Can't use this in main");
             return null;
         }
 
