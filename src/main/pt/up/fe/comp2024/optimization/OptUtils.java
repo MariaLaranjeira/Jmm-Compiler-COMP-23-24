@@ -15,10 +15,6 @@ import static pt.up.fe.comp2024.ast.Kind.TYPE;
 public class OptUtils {
     private static int tempNumber = -1;
 
-    public static String getCode(Symbol symbol) {
-        return symbol.getName() + toOllirType(symbol.getType());
-    }
-
     public static String getTemp() {
 
         return getTemp("tmp");
@@ -51,7 +47,7 @@ public class OptUtils {
         return toOllirType(type.getName());
     }
 
-    private static String toOllirType(String typeName) {
+    public static String toOllirType(String typeName) {
 
         return "." + switch (typeName) {
             case "int" -> "i32";

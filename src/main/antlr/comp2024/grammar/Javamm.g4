@@ -66,10 +66,8 @@ stmt
     : '{' ( stmt )* '}' #BracketsStmt
     | ifStmt (elseStmt)* #ConditionalStmt
     | 'while' '(' expr ')' stmt #WhileStmt
-    | 'for' '(' stmt expr ';' expr ')' stmt #ForStmt
     | expr ';' #ExprStmt
     | expr '=' expr ';' #AssignStmt
-    | expr '[' expr ']' '=' expr ';' #ArrayAssignStmt
     ;
 
 ifStmt
