@@ -41,7 +41,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         exprVisitor = new OllirExprGeneratorVisitor(table);
     }
 
-
     @Override
     protected void buildVisitor() {
         addVisit(PROGRAM, this::visitProgram);
@@ -189,7 +188,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         }
 
         if(isMain){
-            code.append("ret.V;\n");
+            code.append("\nret.V;\n");
         }
 
         code.append(R_BRACKET);
@@ -331,6 +330,15 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             }
         }
 
+        //Get the computations before the function Call
+        if(node.getNumChildren()>1){
+            for (int i = 1; i < node.getNumChildren(); i++) {
+                JmmNode child = node.getChild(i);
+                OllirExprResult result =  exprVisitor.visit(child);
+                code.append(result.getComputation());
+            }
+        }
+
         //construct initial code, excluding parameters
         if(isImported){
             first = node.getChild(0).get("name");
@@ -339,29 +347,22 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         else{
             if(isLocalVariable){
                 first = node.getChild(0).get("name");
-                //String className = node.getAncestor("ClassStmt").get().get("name");
-                code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;
-            }else{
-            first = "this";
-            //String className = node.getAncestor("ClassStmt").get().get("name");
-            code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;}
+                code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");
+            }
+            else{
+                first = "this";
+                code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");
+            }
         }
 
-        //in here we have an error with value and name
+        // in here we have an error with value and name
         if(node.getNumChildren()>1){
             code.append(", ");
-            for (int i = 1; i < node.getNumChildren(); i++) {
-                JmmNode child = node.getChild(i);
-                if(child.hasAttribute("value")) {
-                    code.append(child.get("value"));
-                    code.append(getVarType(child.get("value"),child));
-                }
-                else {
-                    code.append(child.get("name"));
-                    code.append(getVarType(child.get("name"), child));
-                }
-                if(i != node.getNumChildren()-1){
-                    code.append(", ");
+            if(node.getNumChildren()>1){
+                for (int i = 1; i < node.getNumChildren(); i++) {
+                    JmmNode child = node.getChild(i);
+                    OllirExprResult result =  exprVisitor.visit(child);
+                    code.append(result.getCode());
                 }
             }
         }
@@ -386,9 +387,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         // Visit the else statement if it exists
         if (node.getNumChildren() > 1) {
             code.append(visit(node.getJmmChild(1))); //stmt else
+            code.append("goto endif" + ifNum + ";\n");
         }
-
-        code.append("goto endif" + ifNum + ";\n");
 
         code.append("if" + ifNum + ":\n");
         code.append(visit(node.getJmmChild(0).getJmmChild(1))); // stmt of the if(condition)

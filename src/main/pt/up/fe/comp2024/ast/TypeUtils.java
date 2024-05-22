@@ -50,6 +50,7 @@ public class TypeUtils {
             case NEW_ARRAY -> new Type("int", true);
             case INTEGER_LITERAL -> new Type("int", false);
             case BOOLEAN_LITERAL -> new Type("boolean", false);
+            case NOT_EXPR -> getNotType(expr, table);
 
             default -> new Type("3", false);
         };
@@ -59,6 +60,12 @@ public class TypeUtils {
         return "int";
     }
 
+    public static Type getNotType(JmmNode expr, SymbolTable table){
+        Type type = getExprType(expr.getChildren().get(0), table);
+
+        if(type.getName().equals("boolean")) return new Type("boolean", false);
+        else return new Type("3", false);
+    }
 
     public static Type getArrayType(JmmNode arrayInitializer, SymbolTable table) {
         Type expectedType = getExprType(arrayInitializer.getChildren().get(0), table);
@@ -87,7 +94,6 @@ public class TypeUtils {
         return new Type(table.getClassName(), false);
     }
 
-
     private static Type getBinExprType(JmmNode binaryExpr, SymbolTable table) {
         String operator = binaryExpr.get("op");
 
@@ -108,7 +114,7 @@ public class TypeUtils {
         return switch (operator) {
             case "+", "-", "*", "/" ->
                     new Type("int", false);
-            case "==", "!=", "<", ">", "<=", ">=" ->
+            case "==", "!=", "<", ">", "<=", ">=", "&&", "||"->
                     new Type("boolean", false);
             default ->
                     new Type("5", false);

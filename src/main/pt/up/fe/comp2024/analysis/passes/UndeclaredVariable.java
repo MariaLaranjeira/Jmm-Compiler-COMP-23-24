@@ -229,7 +229,9 @@ public class UndeclaredVariable extends AnalysisVisitor {
     }
 
     private boolean isVariableFromOutside(JmmNode varNode, SymbolTable table) {
-        String varName = varNode.get("name");
+        String varName;
+        if(varNode.hasAttribute("name")) varName = varNode.get("name");
+        else varName = varNode.getChildren().get(0).get("name"); // get the name of the type
 
         List<Symbol> locals = table.getLocalVariables(currentMethod);
 

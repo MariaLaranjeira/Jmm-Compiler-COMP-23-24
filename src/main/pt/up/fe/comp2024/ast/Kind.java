@@ -31,6 +31,7 @@ public enum Kind {
     WHILE_STMT,
     THIS_EXPR,
     VAR_REF_EXPR,
+    NOT_EXPR,
     BOOLEAN_LITERAL,
     INTEGER_LITERAL,
     //types
