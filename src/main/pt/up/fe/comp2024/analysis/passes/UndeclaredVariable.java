@@ -49,7 +49,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
         addVisit(Kind.ASSIGN_STMT, this::visitAssign);
         addVisit(Kind.FUNCTION_CALL, this::visitFunctionCall);
         addVisit(Kind.RETURN_STMT, this::visitReturnStmt);
-
     }
 
     private Void visitProgram(JmmNode method, SymbolTable table){

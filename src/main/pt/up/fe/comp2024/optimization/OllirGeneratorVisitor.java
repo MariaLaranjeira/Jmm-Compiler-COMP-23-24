@@ -30,6 +30,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     private int whileNum = 0;
     private int ifNum = 0;
 
+    private String currentMethod;
+
     private final SymbolTable table;
 
     private final OllirExprGeneratorVisitor exprVisitor;
@@ -42,7 +44,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     @Override
     protected void buildVisitor() {
-
         addVisit(PROGRAM, this::visitProgram);
         addVisit("ImportStmt", this::visitImportStmt);
         addVisit("ClassStmt", this::visitClass);
@@ -149,6 +150,12 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder(".method public ");
         boolean isMain = node.getKind().equals("MainMethodDecl");
 
+        if (node.getAttributes().contains("name")) {
+            currentMethod = node.get("name");
+        } else {
+            currentMethod = "main";
+        }
+
         // Main method declaration
         if (isMain) {
             code.append("static main(args.array.String).V {\n");
@@ -159,7 +166,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             code.append(node.get("name")).append("(");
 
             //Parameters
-            List<Symbol> parameters = table.getParameters(getMethodName(node));
+            List<Symbol> parameters = table.getParameters(currentMethod);
 
             if (!parameters.isEmpty()) {
                 List<String> paramCodes = new ArrayList<>();
@@ -169,7 +176,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
                 code.append(String.join(", ", paramCodes));
             }
             code.append(")");
-            String returnName = OptUtils.toOllirType(table.getReturnType(getMethodName(node)));
+            String returnName = OptUtils.toOllirType(table.getReturnType(node.get("name")));
             code.append(returnName).append(" {\n");
         }
 
@@ -192,8 +199,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     //Done (but not sure)
     private String visitReturn(JmmNode node, Void unused) {
-        String methodName = getMethodName(node);
-        Type retType = table.getReturnType(methodName);
+        Type retType = table.getReturnType(currentMethod);
 
         StringBuilder code = new StringBuilder();
         OllirExprResult expr = exprVisitor.visit(node.getJmmChild(0));
@@ -418,20 +424,21 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     private String whileVisit(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder();
 
-        String whileLabel = "Loop_" + whileNum;
-        String endWhile = "EndLoop_" + whileNum;
-        String body = "Body_" + whileNum;
+        String whileLabel = "whileCond" + whileNum;
+        String endWhile = "whileEnd" + whileNum;
+        String body = "whileLoop" + whileNum;
 
         // Add the while label
         code.append(whileLabel).append(":\n");
 
         // Visit the condition expression
-        String conditionCode = exprVisitor.visit(node.getJmmChild(0)).getCode();
+        OllirExprResult conditionCode = exprVisitor.visit(node.getJmmChild(0));
 
         // If the condition is true go to the  body of the WhileLoop
-        code.append("if (").append(conditionCode).append(") goto ").append(body).append(";\n");
+        code.append(conditionCode.getComputation());
+        code.append("if (").append(conditionCode.getCode()).append(") goto ").append(body).append(";\n");
         // Else end Loop
-        code.append("goto ").append(endWhile).append("\n");
+        code.append("goto ").append(endWhile).append(";\n");
 
         // The Body
         code.append(body).append(":\n");
@@ -470,18 +477,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         return symbol.getName() + OptUtils.toOllirType(symbol.getType());
     }
 
-    public String getMethodName(JmmNode node) {
-        while(node != null && !node.getKind().equals("MethodDecl")){
-            node = node.getJmmParent();
-        }
-        if(node != null && node.hasAttribute("name"))
-            return node.get("name");
-
-        return "main";
-    }
-
     private String getVarType(String nome, JmmNode id) {
-        String methodName = getMethodName(id);
 
         //check if is imported (always return .v type)
         for(var imported : table.getImports()){
@@ -499,7 +495,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         }
 
         for (String method : table.getMethods()) {
-            if (methodName.equals(method) || methodName.equals("")) {
+            if (currentMethod.equals(method) || currentMethod.equals("")) {
                 for (Symbol symbol : table.getParameters(method))
                     if (nome.equals(symbol.getName()))
                         return OptUtils.toOllirType(symbol.getType());
