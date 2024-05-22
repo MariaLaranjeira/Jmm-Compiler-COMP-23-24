@@ -139,6 +139,7 @@ public class TypeUtils {
 
         //Var is a local variable
         List<Symbol> locals = table.getLocalVariables(currentMethod);
+
         for (Symbol local : locals) {
             if (local.getName().equals(varName)) {
                 return local.getType();

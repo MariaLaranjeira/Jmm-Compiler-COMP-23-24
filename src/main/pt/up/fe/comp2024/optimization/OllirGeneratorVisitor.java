@@ -149,6 +149,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder(".method public ");
         boolean isMain = node.getKind().equals("MainMethodDecl");
 
+        //Get the current Method
         if (node.getAttributes().contains("name")) {
             currentMethod = node.get("name");
         } else {
@@ -159,14 +160,12 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         if (isMain) {
             code.append("static main(args.array.String).V {\n");
         }
-
         // Normal method declaration
         else {
             code.append(node.get("name")).append("(");
 
             //Parameters
             List<Symbol> parameters = table.getParameters(currentMethod);
-
             if (!parameters.isEmpty()) {
                 List<String> paramCodes = new ArrayList<>();
                 for (Symbol param : parameters) {
@@ -175,6 +174,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
                 code.append(String.join(", ", paramCodes));
             }
             code.append(")");
+
+            //Return Type
             String returnName = OptUtils.toOllirType(table.getReturnType(node.get("name")));
             code.append(returnName).append(" {\n");
         }
@@ -231,15 +232,13 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         var lhs = exprVisitor.visit(node.getJmmChild(0));
         var rhs = exprVisitor.visit(node.getJmmChild(1));
 
-        // code to compute the children
         code.append(lhs.getComputation())
-                .append(rhs.getComputation())
-                .append(lhs.getCode())
+                .append(rhs.getComputation());
+
+        code.append(lhs.getCode())
                 .append(SPACE)
                 .append(ASSIGN);
 
-        // code to compute self
-        // statement has type of lhs
         Type thisType = TypeUtils.getExprType(node.getJmmChild(0), table);
         String typeString = OptUtils.toOllirType(thisType);
 
