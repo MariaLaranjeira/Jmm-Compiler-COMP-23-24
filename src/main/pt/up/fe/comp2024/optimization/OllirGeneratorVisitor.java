@@ -29,7 +29,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     private int whileNum = 0;
     private int ifNum = 0;
-    private int elseNum = 0;
 
     private final SymbolTable table;
 
@@ -55,7 +54,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit(ASSIGN_STMT, this::visitAssignStmt);
         addVisit("ExprStmt", this::visitExprStmt);
         addVisit("FunctionCall", this::visitFunctionCall);
-
 
         addVisit("ConditionalStmt", this::conditionalExprVisit);
         addVisit("IfStmt", this::ifStmtVisit);
@@ -115,7 +113,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
                 code.append(result);
             }
             else{
-                //ClassStmt
+                //methodDecl
                 code.append(visit(child));
                 code.append(NL);
             }
@@ -176,6 +174,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         }
 
         //Todo: Come here again
+        //The rest of the code before method name and parameters
         for (JmmNode child : node.getChildren()) {
             if (!child.getKind().equals("VarStmt")) {
                 code.append(visit(child));
@@ -223,6 +222,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     //TODO: NOT COMPLETE
     private String visitAssignStmt(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder();
+
         var lhs = exprVisitor.visit(node.getJmmChild(0));
         var rhs = exprVisitor.visit(node.getJmmChild(1));
 
@@ -341,12 +341,19 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");;}
         }
 
+        //in here we have an error with value and name
         if(node.getNumChildren()>1){
             code.append(", ");
             for (int i = 1; i < node.getNumChildren(); i++) {
                 JmmNode child = node.getChild(i);
-                code.append(child.get("name"));
-                code.append(getVarType(child.get("name"),child));
+                if(child.hasAttribute("value")) {
+                    code.append(child.get("value"));
+                    code.append(getVarType(child.get("value"),child));
+                }
+                else {
+                    code.append(child.get("name"));
+                    code.append(getVarType(child.get("name"), child));
+                }
                 if(i != node.getNumChildren()-1){
                     code.append(", ");
                 }
@@ -368,16 +375,19 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         // Visit the if statement
         code.append(visit(node.getJmmChild(0))); // if(condition)
-        code.append("goto if_" + ifNum + ";\n");
+        code.append("goto if" + ifNum + ";\n");
 
         // Visit the else statement if it exists
         if (node.getNumChildren() > 1) {
-            code.append(visit(node.getJmmChild(1)));
-
+            code.append(visit(node.getJmmChild(1))); //stmt else
         }
 
-        code.append("if_" + ifNum + ":\n");
+        code.append("goto endif" + ifNum + ";\n");
+
+        code.append("if" + ifNum + ":\n");
         code.append(visit(node.getJmmChild(0).getJmmChild(1))); // stmt of the if(condition)
+
+        code.append("endif" + ifNum + ":\n");
 
         ifNum++;
         return code.toString();
@@ -388,9 +398,10 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder();;
 
         // Visit the condition expression
-        String conditionCode = exprVisitor.visit(node.getJmmChild(0)).getCode();
+        OllirExprResult conditionCode = exprVisitor.visit(node.getJmmChild(0));
 
-        code.append("if (").append(conditionCode).append(") ");
+        code.append(conditionCode.getComputation());
+        code.append("if (").append(conditionCode.getCode()).append(") ");
 
         return code.toString();
     }

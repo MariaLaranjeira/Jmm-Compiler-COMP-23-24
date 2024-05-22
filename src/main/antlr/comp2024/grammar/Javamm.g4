@@ -64,7 +64,7 @@ params
 
 stmt
     : '{' ( stmt )* '}' #BracketsStmt
-    | ifStmt (elseStmt)* #ConditionalStmt
+    | ifStmt (elseStmt)? #ConditionalStmt
     | 'while' '(' expr ')' stmt #WhileStmt
     | expr ';' #ExprStmt
     | expr '=' expr ';' #AssignStmt
