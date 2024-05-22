@@ -73,7 +73,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         code.append("new(array, ").append(rhs.getCode()).append(").array.i32;");
 
-        return new OllirExprResult(null);
+        return new OllirExprResult(code.toString());
     }
 
     private OllirExprResult visitVarRef(JmmNode node, Void unused) {
