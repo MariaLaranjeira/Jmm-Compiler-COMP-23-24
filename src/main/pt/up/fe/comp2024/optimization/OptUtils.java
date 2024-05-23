@@ -49,6 +49,7 @@ public class OptUtils {
     }
 
     public static String toOllirType(Type type) {
+        if(type == null) return ".V";
         if (type.isArray())  return toOllirTypeArray(type.getName());
         return toOllirType(type.getName());
     }

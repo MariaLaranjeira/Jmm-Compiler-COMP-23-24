@@ -263,7 +263,6 @@ public class Cpf3_Ollir {
     }
 
 
-
     @Test
     public void section4_Arrays_VarargsAndArrayInit() {
         var result = getOllirResult("arrays/VarargsAndArrayInit.jmm");
