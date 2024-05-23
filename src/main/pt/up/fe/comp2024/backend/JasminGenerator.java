@@ -199,6 +199,11 @@ public class JasminGenerator {
         code.append(TAB).append(".limit locals 99").append(NL);
 
         for (var inst : method.getInstructions()) {
+
+            for (var label : method.getLabels(inst)){
+                code.append(label).append(":").append(NL);
+            }
+
             var instCode = StringLines.getLines(generators.apply(inst)).stream()
                     .collect(Collectors.joining(NL + TAB, TAB, NL));
 
@@ -425,6 +430,11 @@ public class JasminGenerator {
         }
 
         var operand = (Operand) lhs;
+
+        //if (!(((Operand) lhs).getName().contains("tmp"))) {
+        //
+        //}
+
         switch(operand.getType().toString()) {
             case "INT32" -> code.append("istore ");
             case "BOOLEAN" -> code.append("istore ");
@@ -432,6 +442,8 @@ public class JasminGenerator {
         }
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
+
+        System.out.println("hmmm -> "+((Operand) lhs).getName()+" " + reg);
 
         code.append(reg).append(NL);
 
@@ -539,8 +551,11 @@ public class JasminGenerator {
     private String generateOpCondition(OpCondInstruction opCondInstruction) {
         var code = new StringBuilder();
         code.append(generators.apply(opCondInstruction.getCondition()));
+        System.out.println(opCondInstruction);
 
-        System.out.println("alalalala "+opCondInstruction);
+        String label = opCondInstruction.getLabel();
+
+        System.out.println("LAVELS????: "+label);
         //var ops = opCondInstruction.getCondition().getOperands();
 
         //for (var op : ops) {
@@ -565,9 +580,16 @@ public class JasminGenerator {
     private String generateSingleOpCondition(SingleOpCondInstruction singleOpCondInstruction) {
         var code = new StringBuilder();
 
-        System.out.println("AAAAAAAAAAAAAA"+singleOpCondInstruction.getOperands());
+        //System.out.println(singleOpCondInstruction.getOperands());
         var operand = (Operand) singleOpCondInstruction.getOperands().get(0);
 
+        String label = singleOpCondInstruction.getLabel();
+
+        switch (label) {
+            case "if_0" -> code.append("cmp_lt_0_true:").append(NL);
+            case "AAAAAA" -> code.append("cmp_lt_0_end:").append(NL);
+            case "AAAAAB" -> code.append("endif1:").append(NL);
+        }
 
         code.append(singleOpCondInstruction.getLabel()).append(NL);
 
