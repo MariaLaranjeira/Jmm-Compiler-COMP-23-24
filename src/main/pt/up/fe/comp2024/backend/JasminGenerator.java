@@ -53,6 +53,9 @@ public class JasminGenerator {
         generators.put(Operand.class, this::generateOperand);
         generators.put(BinaryOpInstruction.class, this::generateBinaryOp);
         generators.put(ReturnInstruction.class, this::generateReturn);
+        generators.put(OpCondInstruction.class, this::generateOpCondition);
+        generators.put(GotoInstruction.class, this::generateGoto);
+        generators.put(SingleOpCondInstruction.class, this::generateSingleOpCondition);
     }
 
     public List<Report> getReports() {
@@ -136,6 +139,8 @@ public class JasminGenerator {
             code.append(generators.apply(method));
         }
 
+        System.out.println(code.toString());
+
         return code.toString();
     }
 
@@ -169,6 +174,7 @@ public class JasminGenerator {
                 case "SHORT" -> paramCode.append("S");
                 case "ARRAYREF" -> paramCode.append("[");
                 case "CLASS" -> paramCode.append("L");
+                case "STRING" -> paramCode.append("[Ljava/lang/String;");
                 default -> throw new NotImplementedException(param.getType());
             }
         }
@@ -184,6 +190,7 @@ public class JasminGenerator {
             case "STRING[]" -> code.append("[Ljava/lang/String;").append(NL);
             case "SHORT" -> code.append("S").append(NL);
             case "ARRAYREF" -> code.append("[").append(NL);
+            case "INT32[]" -> code.append("[I").append(NL);
             default -> throw new NotImplementedException(returnType);
         }
 
@@ -257,7 +264,7 @@ public class JasminGenerator {
         code.append(generators.apply(putField.getOperands().get(2)));
 
         code.append("putfield ");
-        
+
         var fc = putField.getOperands().get(0).getType();
         String fieldClass = "";
         if (fc != null) {
@@ -436,7 +443,18 @@ public class JasminGenerator {
     }
 
     private String generateLiteral(LiteralElement literal) {
-        return "ldc " + literal.getLiteral() + NL;
+        String l = literal.getLiteral();
+        int n = Integer.parseInt(l);
+
+        if (n >= 0 && n <= 5) {
+            return "iconst_" + n + NL;
+        } else if (n >=6 && n<= 127) {
+            return "bipush " + n + NL;
+        } else if (n >= 128 && n <= 32767) {
+            return "sipush " + n + NL;
+        } else {
+            return "ldc " + n + NL;
+        }
     }
 
     private String generateOperand(Operand operand) {
@@ -488,7 +506,7 @@ public class JasminGenerator {
             case SHR -> "ishr";
             case SHL -> "ishl";
             case SHRR -> "iushr";
-            case LTH -> "if_icmplt ";
+            case LTH -> "isub\niflt cmp_lt_0_true";
             case GTH -> "if_icmpgt ";
             case LTE -> "if_icmple ";
             case GTE -> "if_icmpge ";
@@ -516,6 +534,45 @@ public class JasminGenerator {
         }
 
         return code.toString();
+    }
+
+    private String generateOpCondition(OpCondInstruction opCondInstruction) {
+        var code = new StringBuilder();
+        code.append(generators.apply(opCondInstruction.getCondition()));
+
+        System.out.println("alalalala "+opCondInstruction);
+        //var ops = opCondInstruction.getCondition().getOperands();
+
+        //for (var op : ops) {
+        //    code.append(generators.apply(op));
+        //}
+
+        return code.toString();
+    }
+
+    private  String generateGoto(GotoInstruction gotoInstruction){
+        var code = new StringBuilder();
+        String label = gotoInstruction.getLabel();
+
+        switch (label) {
+            case "end_0" -> code.append("goto cmp_lt_0_end").append(NL);
+            case "endif_0" -> code.append("goto endif1").append(NL);
+        }
+        System.out.println(gotoInstruction);
+        return code.toString();
+    }
+
+    private String generateSingleOpCondition(SingleOpCondInstruction singleOpCondInstruction) {
+        var code = new StringBuilder();
+
+        System.out.println("AAAAAAAAAAAAAA"+singleOpCondInstruction.getOperands());
+        var operand = (Operand) singleOpCondInstruction.getOperands().get(0);
+
+
+        code.append(singleOpCondInstruction.getLabel()).append(NL);
+
+        return code.toString();
+
     }
 
 }
