@@ -46,6 +46,7 @@ public class JmmSymbolTableBuilder {
                 result.put("main", new Type("static void", false));
                 continue;
             }
+
             result.put(method.get("name"), filterType(method, false));
 
         }

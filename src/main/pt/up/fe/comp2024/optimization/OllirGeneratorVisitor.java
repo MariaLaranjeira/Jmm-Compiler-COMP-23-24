@@ -53,7 +53,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         //Not done
         addVisit(ASSIGN_STMT, this::visitAssignStmt);
         addVisit("ExprStmt", this::visitExprStmt);
-        addVisit("FunctionCall", this::visitFunctionCall);
 
         addVisit("ConditionalStmt", this::conditionalExprVisit);
         addVisit("IfStmt", this::ifStmtVisit);
@@ -134,6 +133,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             //if parent is classStmt add field public to string
             variable.append(".field public ");
         }
+
         String name = varDeclaration.get("name");
         String type = OptUtils.toOllirType(varDeclaration.getJmmChild(0));
 
@@ -155,6 +155,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         } else {
             currentMethod = "main";
         }
+        exprVisitor.currentMethod = currentMethod;
 
         // Main method declaration
         if (isMain) {
@@ -180,7 +181,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             code.append(returnName).append(" {\n");
         }
 
-        //Todo: Come here again
         //The rest of the code before method name and parameters
         for (JmmNode child : node.getChildren()) {
             if (!child.getKind().equals("VarStmt")) {
@@ -220,7 +220,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             code.append(returnChild.get("name")).append(OptUtils.toOllirType(retType));
         }
 
-        code.append(";");
+        code.append(";\n");
 
         return code.toString();
     }
@@ -248,20 +248,18 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
                 .append(END_STMT);
 
         if(node.getChild(1).getKind().equals("NewObject")){
-            code.append(visit(node.getChild(1)));
-            String newVarName = node.getChild(0).get("name");
-            code.append(newVarName).append(typeString).append(SPACE).append(ASSIGN).append(typeString).append(SPACE).append(rhs.getComputation()).append(typeString).append(END_STMT);
+            code.append("invokespecial(").append(lhs.getCode()).append(", \"<init>\").V;\n");
         }
 
         return code.toString();
     }
 
-    //TODO: NOT SURE WE NEED IT
     private String visitExprStmt(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder();
         var firstChild = node.getChild(0);
         if(firstChild.getKind().equals("FunctionCall")){
-            code.append(visit(firstChild));
+            OllirExprResult expr = exprVisitor.visit(node.getJmmChild(0));
+            code.append(expr.getComputation());
         }
         return code.toString();
     }
@@ -275,106 +273,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         return code.toString();
     }
-
-
-    // TODO: needs serious refactoring. probably in grammar as distinction between the calling class and the parameters is essential
-    public String visitFunctionCall(JmmNode node, Void unused){
-        StringBuilder code = new StringBuilder();
-
-        String functionName = node.get("value");
-        String first;
-        String returnCode;
-
-        Type returnType = table.getReturnType(functionName);
-
-        if(returnType!=null){
-            returnCode = OptUtils.toOllirType(returnType);
-        }
-        else{
-            returnCode = ".V";
-        }
-
-        boolean isClass = false;
-        boolean isImported = false;
-        boolean isLocalVariable = false;
-        boolean isThis = false;
-
-        String className = table.getClassName();
-
-        if(node.getChild(0).get("name").equals(className)){
-            isClass = true;
-        }
-
-        //check if first parameter is in imports (hardcoded to check 1st,todo: change grammar to include params in the call)
-        for(var imported : table.getImports()){
-            if (node.getChild(0).get("name").equals(imported)) {
-                isImported = true;
-                break;
-            }
-        }
-
-        String methodName;
-        JmmNode ancestorMethodNode = node.getAncestor("MethodDecl").get();
-        if(ancestorMethodNode.hasAttribute("name")){
-            methodName = ancestorMethodNode.get("name");
-        }else{
-            methodName = "main";
-        }
-
-
-        for(var variable : table.getLocalVariables(methodName)){
-            if(variable.getName().equals(node.getChild(0).get("name"))){
-                isLocalVariable = true;
-                break;
-            }
-        }
-
-        //Get the computations before the function Call
-        if(node.getNumChildren()>1){
-            for (int i = 1; i < node.getNumChildren(); i++) {
-                JmmNode child = node.getChild(i);
-                OllirExprResult result =  exprVisitor.visit(child);
-                code.append(result.getComputation());
-            }
-        }
-
-        //construct initial code, excluding parameters
-        if(isImported){
-            first = node.getChild(0).get("name");
-            code.append("invokestatic(").append(first).append(", \"").append(functionName).append("\"");
-        }
-        else{
-            if(isLocalVariable){
-                first = node.getChild(0).get("name");
-                code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");
-            }
-            else{
-                first = "this";
-                code.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");
-            }
-        }
-
-        // in here we have an error with value and name
-        if(node.getNumChildren()>1){
-            code.append(", ");
-            if(node.getNumChildren()>1){
-                for (int i = 1; i < node.getNumChildren(); i++) {
-                    JmmNode child = node.getChild(i);
-                    OllirExprResult result =  exprVisitor.visit(child);
-                    code.append(result.getCode());
-                }
-            }
-        }
-
-        code.append(")");
-        code.append(returnCode);
-        code.append(";");
-
-        return code.toString();
-    }
-
-
-    //TODO: IM HERE!
 
     private String conditionalExprVisit(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder();

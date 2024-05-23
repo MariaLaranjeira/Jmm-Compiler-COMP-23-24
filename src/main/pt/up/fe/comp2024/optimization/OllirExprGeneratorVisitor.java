@@ -4,7 +4,12 @@ import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.ast.PreorderJmmVisitor;
+import pt.up.fe.comp2024.JavammParser;
 import pt.up.fe.comp2024.ast.TypeUtils;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static pt.up.fe.comp2024.ast.Kind.*;
 
@@ -16,6 +21,8 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
     private static final String ASSIGN = ":=";
     private final String END_STMT = ";\n";
     private final SymbolTable table;
+
+    public String currentMethod;
 
     public OllirExprGeneratorVisitor(SymbolTable table) {
         this.table = table;
@@ -59,11 +66,12 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         StringBuilder code = new StringBuilder();
         var rhs = visit(node.getJmmChild(1));
 
-        code.append("$1.");
+        String temp = "tmp";
+
         code.append(node.getChild(0).get("name"));
         code.append("[").append(rhs.getCode()).append("].i32");
 
-        return new OllirExprResult(code.toString());
+        return new OllirExprResult(code.toString(), rhs.getComputation());
 
     }
 
@@ -71,9 +79,9 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         StringBuilder code = new StringBuilder();
         var rhs = visit(node.getJmmChild(0));
 
-        code.append("new(array, ").append(rhs.getCode()).append(").array.i32;");
+        code.append("new(array, ").append(rhs.getCode()).append(").array.i32");
 
-        return new OllirExprResult(code.toString());
+        return new OllirExprResult(code.toString(),  rhs.getComputation());
     }
 
     private OllirExprResult visitVarRef(JmmNode node, Void unused) {
@@ -84,14 +92,11 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
     }
 
     private OllirExprResult visitNewObject(JmmNode jmmNode, Void unused) {
-        StringBuilder computation = new StringBuilder();
-
+        StringBuilder code = new StringBuilder();
         String objectType = jmmNode.get("value");
 
-        computation.append("new(").append(objectType).append(").").append(objectType);
-        String code = OptUtils.getTemp();
-
-        return new OllirExprResult(computation.toString(),code);
+        code.append("new(").append(objectType).append(").").append(objectType);
+        return new OllirExprResult(code.toString());
 
     }
 
@@ -114,23 +119,81 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         return new OllirExprResult(code, computation);
     }
 
-    //TODO: Analyse
-    private OllirExprResult visitFunctionCall(JmmNode jmmNode, Void unused) {
-        OllirGeneratorVisitor visitor = new OllirGeneratorVisitor(table);
-        String visitCode = visitor.visitFunctionCall(jmmNode,unused);
+    private OllirExprResult visitFunctionCall(JmmNode node, Void unused) {
+        String functionName = node.get("value");
+        String first;
+        String returnCode;
+        Type returnType = table.getReturnType(functionName);
+
+        returnCode = OptUtils.toOllirType(returnType);
+
+        boolean isImported = false;
+        boolean isLocalVariable = false;
+
+        //check if first parameter is in imports
+        String className = table.getClassName();
+        for(var imported : table.getImports()){
+            if (node.getChild(0).get("name").equals(imported)) {
+                isImported = true;
+                break;
+            }
+        }
+        for(var variable : table.getLocalVariables(currentMethod)){
+            if(variable.getName().equals(node.getChild(0).get("name"))){
+                isLocalVariable = true;
+                break;
+            }
+        }
 
         StringBuilder computation = new StringBuilder();
+        List<String> codes = new ArrayList<>();
+        //Get the computations before the function Call
+        //computations of the parameters in the function call
+        if(node.getNumChildren() > 1){
+            for (int i = 1; i < node.getNumChildren(); i++) {
+                JmmNode child = node.getChild(i);
+                OllirExprResult result = visit(child);
+                computation.append(result.getComputation());
+                codes.add(result.getCode());
+            }
+        }
 
-        // code to compute self
-        Type resType = TypeUtils.getExprType(jmmNode, table);
-        String resOllirType = OptUtils.toOllirType(resType);
-        String code = OptUtils.getTemp() + resOllirType;
+        String code = OptUtils.getTemp() + returnCode;
 
-        computation.append(code).append(SPACE)
-                .append(ASSIGN).append(resOllirType).append(SPACE)
-                .append(visitCode).append(SPACE).append("\n");
+        if(isImported){
+            first = node.getChild(0).get("name");
+            computation.append("invokestatic(").append(first).append(", \"").append(functionName).append("\"");
+        }
+        else{
+            computation.append(code).append(SPACE)
+                    .append(ASSIGN).append(returnCode).append(SPACE);
 
-        return new OllirExprResult(code,computation);
+            if(isLocalVariable){
+                first = node.getChild(0).get("name");
+                computation.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");
+            }
+            else{
+                first = "this";
+                computation.append("invokevirtual(").append(first).append(".").append(className).append(", \"").append(functionName).append("\"");
+            }
+        }
+
+        //Append the code of the parameters in the invocation of function
+        if(node.getNumChildren()>1){
+            computation.append(", ");
+            for (int i = 0; i < codes.size(); i++) {
+                computation.append(codes.get(i));
+
+            }
+        }
+
+        computation.append(")");
+
+        //Append the return code
+        computation.append(returnCode);
+        computation.append(";\n");
+
+        return new OllirExprResult(code, computation);
     }
 
 
