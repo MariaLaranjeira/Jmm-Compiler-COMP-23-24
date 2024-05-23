@@ -134,6 +134,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             //if parent is classStmt add field public to string
             variable.append(".field public ");
         }
+
         String name = varDeclaration.get("name");
         String type = OptUtils.toOllirType(varDeclaration.getJmmChild(0));
 
