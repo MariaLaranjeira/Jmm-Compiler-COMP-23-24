@@ -11,10 +11,7 @@ import java.util.*;
 import static pt.up.fe.comp2024.ast.Kind.*;
 
 public class JmmSymbolTableBuilder {
-
-
     public static JmmSymbolTable build(JmmNode root) {
-
         var classDecl = root.getChildren(Kind.CLASS_DECL).get(0);
         SpecsCheck.checkArgument(Kind.CLASS_DECL.check(classDecl), () -> "Expected a class declaration: " + classDecl);
 
@@ -40,7 +37,6 @@ public class JmmSymbolTableBuilder {
     }
 
     private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
-
         var result = new HashMap<String, Type>();
         var methods = classDecl.getChildren(METHOD_DECL);
         for (var method : methods) {
@@ -58,7 +54,6 @@ public class JmmSymbolTableBuilder {
     }
 
     private static Map<String, List<Symbol>> buildParams(JmmNode classDecl) {
-
         var methods = classDecl.getChildren(METHOD_DECL);
         var result = new HashMap<String, List<Symbol>>();
 

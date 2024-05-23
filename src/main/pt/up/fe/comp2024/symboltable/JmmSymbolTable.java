@@ -63,6 +63,7 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public Type getReturnType(String methodSignature) {
+
         return returnTypes.get(methodSignature);
     }
 
