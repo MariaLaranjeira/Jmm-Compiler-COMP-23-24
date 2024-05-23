@@ -28,7 +28,7 @@ returnStmt
     ;
 
 methodDecl
-    : ('public')? (isStatic='static')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}' #RegularMethodDecl
+    : ('public')? type name=ID '(' params ')' '{' (varDecl)* (stmt)* returnStmt'}' #RegularMethodDecl
     | ('public')? 'static' 'void' 'main' '(' 'String' '['']' args=ID ')' '{' (varDecl)* (stmt)* '}' #MainMethodDecl
     ;
 
