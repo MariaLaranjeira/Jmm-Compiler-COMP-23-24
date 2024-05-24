@@ -251,6 +251,23 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             .append(typeString).append(SPACE)
             .append(rhs.getCode()).append(END_STMT);
 
+        //in case of array initialization
+        int numberOfChildren = node.getJmmChild(1).getChildren().size();
+        if(node.getJmmChild(1).getKind().equals("ArrayInitializer") && numberOfChildren != 0 )
+            for (int i = 0; i < numberOfChildren; i++) {
+                //get the elements of the array
+                JmmNode child = node.getJmmChild(1).getChildren().get(i);
+
+                OllirExprResult arrayElem = exprVisitor.visit(child);
+
+                code.append(arrayElem.getComputation());
+                //assign each element of the array to the value
+                code.append(node.getJmmChild(0).get("name"));
+                code.append("[").append(i).append(".i32").append("].i32");
+                code.append(" :=.i32 ").append(arrayElem.getCode())
+                .append(END_STMT);
+            }
+
         if(node.getChild(1).getKind().equals("NewObject") && lhs != null){
             code.append("invokespecial(").append(lhs.getCode()).append(", \"<init>\").V;\n");
         }
