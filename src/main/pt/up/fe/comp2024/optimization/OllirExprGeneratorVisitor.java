@@ -164,7 +164,8 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         //Get Parameters Types, so i can know if we have a vararg
         List<Symbol> parameters = table.getParameters(functionName);
-        int numParameters = parameters.size(); //number of parameters
+        boolean hasVarargs = !parameters.isEmpty() && parameters.get(parameters.size() - 1).getType().hasAttribute("isVararg");
+        //number of parameters
         int numParametersCallFunction = node.getNumChildren(); //num of parameters in call function
         StringBuilder computation = new StringBuilder();
         List<String> codes = new ArrayList<>();
@@ -174,7 +175,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         if(numParametersCallFunction > 1){
             for (int i = 1; i < numParametersCallFunction; i++) {
                 //If it is a vararg = array creation
-                if(numParametersCallFunction != numParameters && numParameters - 1 < i){
+                if(hasVarargs && parameters.size() - 1 < i){
                     String temp = OptUtils.getTemp();
                     String callType = temp + ".array.i32";
 
@@ -189,7 +190,6 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
                         computation.append("[").append(j).append(".i32").append("].i32");
                         computation.append(" :=.i32 ").append(arrayElem.getCode()).append(END_STMT);
                     }
-
                     //Add code
                     codes.add(callType);
                     break;
@@ -201,6 +201,8 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
                     computation.append(result.getComputation());
                     codes.add(result.getCode());
                 }
+
+
             }
         }
 
