@@ -67,7 +67,6 @@ public class JasminGenerator {
             code = generators.apply(ollirResult.getOllirClass());
         }
 
-        //System.out.println(code);
         return code;
     }
 
@@ -197,7 +196,7 @@ public class JasminGenerator {
         }
 
         // Add limits
-        code.append(TAB).append(".limit stack 99").append(NL);
+        code.append(TAB).append(".limit stack 20").append(NL);
         code.append(TAB).append(".limit locals ").append(maxVReg + 1).append(NL);
 
 
@@ -397,7 +396,6 @@ public class JasminGenerator {
                     code.append(callerClass2,6,callerClass2.length()-1).append("/");
                 }
 
-                //code.append(ollirResult.getOllirClass().getClassName()).append("/");
                 LiteralElement le2 = (LiteralElement) callInstruction.getOperands().get(1);
                 code.append(le2.getLiteral(), 1, le2.getLiteral().length() - 1);
                 code.append("(");
@@ -594,11 +592,6 @@ public class JasminGenerator {
         String label = opCondInstruction.getLabel();
 
         code.append(label).append(NL);
-        //var ops = opCondInstruction.getCondition().getOperands();
-
-        //for (var op : ops) {
-        //    code.append(generators.apply(op));
-        //}
 
         return code.toString();
     }
@@ -614,8 +607,6 @@ public class JasminGenerator {
         var code = new StringBuilder();
 
         code.append(generators.apply(singleOpCondInstruction.getOperands().get(0)));
-
-        String label = singleOpCondInstruction.getLabel();
 
         code.append("ifne ").append(singleOpCondInstruction.getLabel()).append(NL);
 
