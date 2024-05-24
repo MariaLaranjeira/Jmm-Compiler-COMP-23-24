@@ -56,6 +56,7 @@ public class JasminGenerator {
         generators.put(OpCondInstruction.class, this::generateOpCondition);
         generators.put(GotoInstruction.class, this::generateGoto);
         generators.put(SingleOpCondInstruction.class, this::generateSingleOpCondition);
+        generators.put(UnaryOpInstruction.class, this::generateUnaryOpInstruction);
     }
 
     public List<Report> getReports() {
@@ -517,8 +518,8 @@ public class JasminGenerator {
             case SHRR -> code.append("iushr").append(NL);
             case LTH -> code.append("isub\niflt ");
             case GTH -> code.append("if_icmpgt ").append(NL);
-            case LTE -> code.append("if_icmple ").append(NL);
-            case GTE -> code.append("if_icmpge ").append(NL);
+            case LTE -> code.append("if_icmplt ");
+            case GTE -> code.append("if_icmpgt ");
             default -> throw new NotImplementedException(binaryOp.getOperation().getOpType());
         }
 
@@ -583,6 +584,12 @@ public class JasminGenerator {
 
         return code.toString();
 
+    }
+
+    private String generateUnaryOpInstruction(UnaryOpInstruction unaryOpInstruction) {
+        var code = new StringBuilder();
+        //code.append(generators.apply(unaryOpInstruction.getOperand()));
+        return code.toString();
     }
 
 }
