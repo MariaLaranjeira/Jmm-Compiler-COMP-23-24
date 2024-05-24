@@ -200,16 +200,29 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     //Done
     private String visitReturn(JmmNode node, Void unused) {
         Type retType = table.getReturnType(currentMethod);
-
         StringBuilder code = new StringBuilder();
-        OllirExprResult expr = exprVisitor.visit(node.getJmmChild(0));
 
-        code.append(expr.getComputation());
-        code.append("ret");
-        code.append(OptUtils.toOllirType(retType));
-        code.append(SPACE);
-        code.append(expr.getCode());
-        code.append(";\n");
+        if(node.getKind().equals("GetValue") && node.getJmmChild(0).getJmmChild(0).get("name").equals("this")){
+            String temp = OptUtils.getTemp();
+            JmmNode varThis = node.getJmmChild(0).getJmmChild(1);
+            Type type = TypeUtils.getExprType(varThis, table);
+            String ollirType = OptUtils.toOllirType(type);
+
+            code.append(temp).append(ollirType).append(SPACE);
+            code.append(ASSIGN).append(ollirType).append(SPACE);
+            code.append("getfield(this, ").append(varThis.get("name")).append(ollirType).append(")").append(ollirType).append(";\n");
+            code.append("ret").append(ollirType).append(SPACE).append(temp).append(ollirType).append(";\n");
+        }
+        else{
+            OllirExprResult expr = exprVisitor.visit(node.getJmmChild(0));
+
+            code.append(expr.getComputation());
+            code.append("ret");
+            code.append(OptUtils.toOllirType(retType));
+            code.append(SPACE);
+            code.append(expr.getCode());
+            code.append(";\n");
+        }
 
         return code.toString();
     }
@@ -217,6 +230,20 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     //TODO: NOT COMPLETE
     private String visitAssignStmt(JmmNode node, Void unused) {
         StringBuilder code = new StringBuilder();
+
+        //Verify if the left element in the assignment is "this"
+        if(node.getJmmChild(0).getKind().equals("GetValue") && node.getJmmChild(0).getJmmChild(0).get("name").equals("this")){
+            JmmNode varThis = node.getJmmChild(0).getJmmChild(1);
+            Type type = TypeUtils.getExprType(varThis, table);
+            String ollirType = OptUtils.toOllirType(type);
+
+            OllirExprResult rhs = exprVisitor.visit(node.getJmmChild(1));
+
+            code.append(rhs.getComputation());
+            code.append("putfield(this, ").append(varThis.get("name")).append(ollirType)
+                    .append(", ").append(rhs.getCode()).append(").V").append(END_STMT);
+        }
+
         OllirExprResult  rhs = exprVisitor.visit(node.getJmmChild(1));
         OllirExprResult lhs = null;
 

@@ -87,6 +87,7 @@ expr
     | expr '[' expr ']' #ArrayAccess
     | expr '.' value=ID '(' (expr (',' expr)*)? ')' #FunctionCall
     | expr '.' 'length' #Length
+    | expr '.' expr  #GetValue
     | value = '!' expr #NotExpr
     | expr op = ('*' | '/') expr #BinaryOp
     | expr op = ('+' | '-') expr #BinaryOp

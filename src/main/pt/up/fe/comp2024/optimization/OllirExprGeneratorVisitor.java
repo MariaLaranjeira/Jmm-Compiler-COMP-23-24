@@ -131,6 +131,26 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         return new OllirExprResult(code, computation);
     }
 
+    private OllirExprResult visitGetValue(JmmNode node, Void unused) {
+        StringBuilder computation = new StringBuilder();
+
+        //we only have (new) arrays of ints in this grammar
+        String temp = OptUtils.getTemp();
+        Type var = TypeUtils.getExprType(node.getJmmChild(1), table);
+        String ollirIntType = OptUtils.toOllirType(var);
+
+        computation.append(temp).append(ollirIntType)
+                .append(" :=").append(ollirIntType)
+                .append(" arraylength(")
+                .append(node.getChild(0).get("name"))
+                .append(".array.i32).i32;\n");
+
+        String code = temp + ollirIntType;
+
+        return new OllirExprResult(code, computation);
+    }
+
+
     private OllirExprResult visitFunctionCall(JmmNode node, Void unused) {
         String functionName = node.get("value");
         String first;
