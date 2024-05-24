@@ -3,7 +3,6 @@ package pt.up.fe.comp.cp2;
 import org.junit.Test;
 import pt.up.fe.comp.TestUtils;
 import pt.up.fe.specs.util.SpecsIo;
-
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
