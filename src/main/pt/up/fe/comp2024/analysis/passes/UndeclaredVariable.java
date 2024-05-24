@@ -118,7 +118,6 @@ public class UndeclaredVariable extends AnalysisVisitor {
         }
 
         return null;
-
     }
 
     private Void visitVarRefExpr(JmmNode varRefExpr, SymbolTable table) {
