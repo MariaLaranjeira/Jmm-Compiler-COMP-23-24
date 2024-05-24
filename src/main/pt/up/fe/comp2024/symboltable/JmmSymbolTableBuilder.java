@@ -28,12 +28,23 @@ public class JmmSymbolTableBuilder {
         var returnTypes = buildReturnTypes(classDecl);
         var params = buildParams(classDecl);
         var locals = buildLocals(classDecl);
-
-        var imports = root.getChildren("ImportStmt").stream()
-                .map(importDecl -> importDecl.get("ID"))
-                .toList();
+        var imports = buildImports(root);
 
         return new JmmSymbolTable(className,supers, imports, fields, methods, returnTypes, params, locals);
+    }
+
+    private static List<String> buildImports(JmmNode jmmNode) {
+        var allImports = jmmNode.getChildren("ImportStmt");
+        List<String> importsHelper = new ArrayList<>();
+
+        for(var imp : allImports) {
+            String imports = imp.get("value").substring(1, imp.get("value").length() - 1);
+            String completeImport = String.join(".", imports.split(", "));
+            
+            importsHelper.add(completeImport);
+        }
+
+        return importsHelper;
     }
 
     private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
