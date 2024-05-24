@@ -1,6 +1,5 @@
 package pt.up.fe.comp2024.backend;
 
-import com.sun.jdi.ObjectReference;
 import org.specs.comp.ollir.*;
 import org.specs.comp.ollir.tree.TreeNode;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
@@ -9,9 +8,7 @@ import pt.up.fe.specs.util.classmap.FunctionClassMap;
 import pt.up.fe.specs.util.exceptions.NotImplementedException;
 import pt.up.fe.specs.util.utilities.StringLines;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -193,9 +190,16 @@ public class JasminGenerator {
             default -> throw new NotImplementedException(returnType);
         }
 
+        int maxVReg = 0;
+
+        for (var var : method.getVarTable().values()) {
+            maxVReg = Math.max(maxVReg, var.getVirtualReg());
+        }
+
         // Add limits
         code.append(TAB).append(".limit stack 99").append(NL);
-        code.append(TAB).append(".limit locals 99").append(NL);
+        code.append(TAB).append(".limit locals ").append(maxVReg + 1).append(NL);
+
 
         for (var inst : method.getInstructions()) {
 
@@ -216,8 +220,6 @@ public class JasminGenerator {
             }
 
         }
-
-
 
         code.append(".end method\n");
 
