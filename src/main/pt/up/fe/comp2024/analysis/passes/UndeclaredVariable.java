@@ -124,6 +124,8 @@ public class UndeclaredVariable extends AnalysisVisitor {
         // Check if exists a parameter or variable declaration with the same name as the variable reference
         var varRefName = varRefExpr.get("name");
 
+        if(varRefName.equals("length")||varRefName.equals("main")) return null;
+
         if ("this".equals(varRefName) && currentMethod.equals("main")) {
             addErrorReport(varRefExpr, "'this' cannot be used in static context such as the 'main' method.");
         }

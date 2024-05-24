@@ -88,8 +88,8 @@ public class TypeUtils {
     }
 
     private static Type getThisType(JmmNode binaryExpr, SymbolTable table) {
-        String className = table.getClassName();
-        if(className.equals("main"))
+        String methodName = findCurrentMethodName(binaryExpr);
+        if(methodName.equals("main"))
             return new Type("6", false);
         return new Type(table.getClassName(), false);
     }
