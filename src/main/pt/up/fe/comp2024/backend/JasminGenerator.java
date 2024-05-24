@@ -139,8 +139,6 @@ public class JasminGenerator {
             code.append(generators.apply(method));
         }
 
-        System.out.println(code.toString());
-
         return code.toString();
     }
 
@@ -325,7 +323,7 @@ public class JasminGenerator {
                 for (var arg : callInstruction.getArguments()) {
                     code.append(generators.apply(arg));
                 }
-                code.append(NL);
+                //code.append(NL);
                 code.append("invokestatic ");
                 Operand lhs3 = (Operand) callInstruction.getCaller();
                 code.append(lhs3.getName()).append("/");
@@ -443,7 +441,6 @@ public class JasminGenerator {
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
 
-        System.out.println("hmmm -> "+((Operand) lhs).getName()+" " + reg);
 
         code.append(reg).append(NL);
 
@@ -504,28 +501,26 @@ public class JasminGenerator {
         code.append(generators.apply(binaryOp.getRightOperand()));
 
         // apply operation
-        var op = switch (binaryOp.getOperation().getOpType()) {
-            case ADD -> "iadd";
-            case SUB -> "isub";
-            case MUL -> "imul";
-            case DIV -> "idiv";
-            case XOR -> "ixor";
-            case AND, ANDB -> "iand";
-            case OR, ORB -> "ior";
-            case NOTB, NOT -> "iconst_1\nixor";
-            case EQ -> "if_icmpeq ";
-            case NEQ -> "if_icmpne ";
-            case SHR -> "ishr";
-            case SHL -> "ishl";
-            case SHRR -> "iushr";
-            case LTH -> "isub\niflt cmp_lt_0_true";
-            case GTH -> "if_icmpgt ";
-            case LTE -> "if_icmple ";
-            case GTE -> "if_icmpge ";
+        switch (binaryOp.getOperation().getOpType()) {
+            case ADD -> code.append("iadd").append(NL);
+            case SUB -> code.append("isub").append(NL);
+            case MUL -> code.append("imul").append(NL);
+            case DIV -> code.append("idiv").append(NL);
+            case XOR -> code.append("ixor").append(NL);
+            case AND, ANDB -> code.append("iand").append(NL);
+            case OR, ORB -> code.append("ior").append(NL);
+            case NOTB, NOT -> code.append("iconst_1\nixor").append(NL);
+            case EQ -> code.append("if_icmpeq ").append(NL);
+            case NEQ -> code.append("if_icmpne ").append(NL);
+            case SHR -> code.append("ishr").append(NL);
+            case SHL -> code.append("ishl").append(NL);
+            case SHRR -> code.append("iushr").append(NL);
+            case LTH -> code.append("isub\niflt ");
+            case GTH -> code.append("if_icmpgt ").append(NL);
+            case LTE -> code.append("if_icmple ").append(NL);
+            case GTE -> code.append("if_icmpge ").append(NL);
             default -> throw new NotImplementedException(binaryOp.getOperation().getOpType());
-        };
-
-        code.append(op).append(NL);
+        }
 
         return code.toString();
     }
@@ -551,11 +546,10 @@ public class JasminGenerator {
     private String generateOpCondition(OpCondInstruction opCondInstruction) {
         var code = new StringBuilder();
         code.append(generators.apply(opCondInstruction.getCondition()));
-        System.out.println(opCondInstruction);
 
         String label = opCondInstruction.getLabel();
 
-        System.out.println("LAVELS????: "+label);
+        code.append(label).append(NL);
         //var ops = opCondInstruction.getCondition().getOperands();
 
         //for (var op : ops) {
@@ -569,29 +563,23 @@ public class JasminGenerator {
         var code = new StringBuilder();
         String label = gotoInstruction.getLabel();
 
-        switch (label) {
-            case "end_0" -> code.append("goto cmp_lt_0_end").append(NL);
-            case "endif_0" -> code.append("goto endif1").append(NL);
-        }
-        System.out.println(gotoInstruction);
+        //switch (label) {
+        //    case "end_0" -> code.append("goto cmp_lt_0_end").append(NL);
+        //    case "endif_0" -> code.append("goto endif1").append(NL);
+        //}
+        code.append("goto "+label).append(NL);
         return code.toString();
     }
 
     private String generateSingleOpCondition(SingleOpCondInstruction singleOpCondInstruction) {
         var code = new StringBuilder();
 
-        //System.out.println(singleOpCondInstruction.getOperands());
         var operand = (Operand) singleOpCondInstruction.getOperands().get(0);
+        code.append(generators.apply(operand));
 
         String label = singleOpCondInstruction.getLabel();
 
-        switch (label) {
-            case "if_0" -> code.append("cmp_lt_0_true:").append(NL);
-            case "AAAAAA" -> code.append("cmp_lt_0_end:").append(NL);
-            case "AAAAAB" -> code.append("endif1:").append(NL);
-        }
-
-        code.append(singleOpCondInstruction.getLabel()).append(NL);
+        code.append("ifne ").append(singleOpCondInstruction.getLabel()).append(NL);
 
         return code.toString();
 
