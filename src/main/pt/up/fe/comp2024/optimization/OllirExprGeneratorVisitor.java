@@ -165,16 +165,18 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         //Get Parameters Types, so i can know if we have a vararg
         List<Symbol> parameters = table.getParameters(functionName);
         boolean hasVarargs = !parameters.isEmpty() && parameters.get(parameters.size() - 1).getType().hasAttribute("isVararg");
-        //number of parameters
-        int numParametersCallFunction = node.getNumChildren(); //num of parameters in call function
+
+        //number of parameters in call function
+        int numParametersCallFunction = node.getNumChildren();
+
         StringBuilder computation = new StringBuilder();
         List<String> codes = new ArrayList<>();
 
         //Get the computations before the function Call
-        //computations of the parameters in the function call
         if(numParametersCallFunction > 1){
             for (int i = 1; i < numParametersCallFunction; i++) {
-                //If it is a vararg = array creation
+
+                //If it is a VARARG = array creation
                 if(hasVarargs && parameters.size() - 1 < i){
                     String temp = OptUtils.getTemp();
                     String callType = temp + ".array.i32";
@@ -195,14 +197,41 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
                     break;
                 }
 
+                //If it is an ARRAY
+                else if(node.getJmmChild(i).getKind().equals("ArrayInitializer")){
+                    JmmNode child = node.getChild(i);
+                    int numberOfChildren = child.getChildren().size();
+
+                    OllirExprResult result = visit(child);
+                    String temp = OptUtils.getTemp();
+                    String arrayName = temp + ".array.i32";
+
+                    computation.append(arrayName).append(SPACE).append(ASSIGN)
+                            .append(".array.i32").append(SPACE)
+                            .append(result.getCode()).append(END_STMT);;
+
+                    for (int arrayNum = 0; arrayNum < numberOfChildren; arrayNum++) {
+                        //get the elements of the array
+                        JmmNode arrayChild = node.getJmmChild(1).getChildren().get(arrayNum);
+                        OllirExprResult arrayElem = visit(arrayChild );
+
+                        computation.append(arrayElem.getComputation());
+                        //assign each element of the array to the value
+                        computation.append(temp);
+                        computation.append("[").append(arrayNum).append(".i32").append("].i32");
+                        computation.append(" :=.i32 ").append(arrayElem.getCode())
+                                .append(END_STMT);
+                    }
+
+                    codes.add(arrayName);
+                }
+                // Otherwise - normal param
                 else{
                     JmmNode child = node.getChild(i);
                     OllirExprResult result = visit(child);
                     computation.append(result.getComputation());
                     codes.add(result.getCode());
                 }
-
-
             }
         }
 
@@ -227,9 +256,9 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         }
 
         //Append the code of the parameters in the invocation of function
-        if(node.getNumChildren()>1){
-            computation.append(", ");
+        if(node.getNumChildren() > 1){
             for (int i = 0; i < codes.size(); i++) {
+                computation.append(", ");
                 computation.append(codes.get(i));
             }
         }
