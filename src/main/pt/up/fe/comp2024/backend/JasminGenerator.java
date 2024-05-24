@@ -575,8 +575,7 @@ public class JasminGenerator {
     private String generateSingleOpCondition(SingleOpCondInstruction singleOpCondInstruction) {
         var code = new StringBuilder();
 
-        var operand = (Operand) singleOpCondInstruction.getOperands().get(0);
-        code.append(generators.apply(operand));
+        code.append(generators.apply(singleOpCondInstruction.getOperands().get(0)));
 
         String label = singleOpCondInstruction.getLabel();
 
@@ -588,7 +587,14 @@ public class JasminGenerator {
 
     private String generateUnaryOpInstruction(UnaryOpInstruction unaryOpInstruction) {
         var code = new StringBuilder();
-        //code.append(generators.apply(unaryOpInstruction.getOperand()));
+
+        code.append(generators.apply(unaryOpInstruction.getOperand()));
+
+        switch (unaryOpInstruction.getOperation().getOpType()) {
+            case  NOT-> code.append("ineg").append(NL);
+            case NOTB -> code.append("iconst_1\nixor").append(NL);
+            default -> throw new NotImplementedException(unaryOpInstruction.getOperation().getOpType());
+        }
         return code.toString();
     }
 
