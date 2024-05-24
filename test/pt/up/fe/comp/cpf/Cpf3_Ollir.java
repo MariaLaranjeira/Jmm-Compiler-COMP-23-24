@@ -44,6 +44,10 @@ public class Cpf3_Ollir {
     public void section2_Arithmetic_Simple_and() {
         var ollirResult = getOllirResult("arithmetic/Arithmetic_and.jmm");
 
+        System.out.println("---------------------- OLLIR ----------------------");
+        System.out.println(ollirResult.getOllirCode());
+        System.out.println("---------------------- OLLIR ----------------------");
+
         var method = CpUtils.getMethod(ollirResult, "main");
 
         // Check if it has ifs and a gotos
@@ -102,6 +106,10 @@ public class Cpf3_Ollir {
     public void section3_ControlFlow_If_Switch() {
 
         var result = getOllirResult("control_flow/SwitchStat.jmm");
+
+        System.out.println("---------------------- OLLIR ----------------------");
+        System.out.println(result.getOllirCode());
+        System.out.println("---------------------- OLLIR ----------------------");
 
         var method = CpUtils.getMethod(result, "func");
 
@@ -210,6 +218,10 @@ public class Cpf3_Ollir {
     public void section4_Arrays_Varargs() {
         var result = getOllirResult("arrays/ArrayVarArgs.jmm");
 
+        System.out.println("---------------------- OLLIR ----------------------");
+        System.out.println(result.getOllirCode());
+        System.out.println("---------------------- OLLIR ----------------------");
+
         var method = CpUtils.getMethod(result, "bar");
 
         var calls = CpUtils.getInstructions(CallInstruction.class, method);
@@ -236,6 +248,10 @@ public class Cpf3_Ollir {
     @Test
     public void section4_Arrays_Array_Initialization() {
         var result = getOllirResult("arrays/ArrayInitialization.jmm");
+
+        System.out.println("---------------------- OLLIR ----------------------");
+        System.out.println(result.getOllirCode());
+        System.out.println("---------------------- OLLIR ----------------------");
 
         var method = CpUtils.getMethod(result, "foo");
 
@@ -267,6 +283,9 @@ public class Cpf3_Ollir {
     public void section4_Arrays_VarargsAndArrayInit() {
         var result = getOllirResult("arrays/VarargsAndArrayInit.jmm");
 
+        System.out.println("---------------------- OLLIR ----------------------");
+        System.out.println(result.getOllirCode());
+        System.out.println("---------------------- OLLIR ----------------------");
 
         var method = CpUtils.getMethod(result, "bar");
 

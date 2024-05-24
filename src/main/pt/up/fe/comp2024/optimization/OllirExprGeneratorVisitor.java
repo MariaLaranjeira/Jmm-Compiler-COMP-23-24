@@ -40,6 +40,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         addVisit("NewArray", this::visitNewArray);
         addVisit("Length", this::visitLength);
         addVisit("ArrayAccess", this::visitArrayAccess);
+        addVisit("ArrayInitializer", this::visitArrayInitializer);
 
         setDefaultVisit(this::defaultVisit);
     }
@@ -63,15 +64,16 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
     }
 
     private OllirExprResult visitArrayAccess(JmmNode node, Void unused) {
-        StringBuilder code = new StringBuilder();
+        StringBuilder computation = new StringBuilder();
         var rhs = visit(node.getJmmChild(1));
+        String code = OptUtils.getTemp() + ".i32";
 
-        String temp = "tmp";
+        computation.append(code)
+                .append(" :=").append(".i32 ")
+                .append(node.getChild(0).get("name"))
+                .append("[").append(rhs.getCode()).append("].i32;\n");
 
-        code.append(node.getChild(0).get("name"));
-        code.append("[").append(rhs.getCode()).append("].i32");
-
-        return new OllirExprResult(code.toString(), rhs.getComputation());
+        return new OllirExprResult(code, rhs.getComputation()+ computation);
 
     }
 
@@ -81,7 +83,16 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         code.append("new(array, ").append(rhs.getCode()).append(").array.i32");
 
-        return new OllirExprResult(code.toString(),  rhs.getComputation());
+        return new OllirExprResult(code.toString(), rhs.getComputation());
+    }
+
+    private OllirExprResult visitArrayInitializer(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+
+        int numberOfChildren = node.getChildren().size();
+        code.append("new(array, ").append(numberOfChildren).append(".i32)").append(".array.i32");
+
+        return new OllirExprResult(code.toString());
     }
 
     private OllirExprResult visitVarRef(JmmNode node, Void unused) {
@@ -183,7 +194,6 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
             computation.append(", ");
             for (int i = 0; i < codes.size(); i++) {
                 computation.append(codes.get(i));
-
             }
         }
 
