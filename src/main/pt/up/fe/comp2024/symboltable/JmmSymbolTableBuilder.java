@@ -39,8 +39,9 @@ public class JmmSymbolTableBuilder {
 
         for(var imp : allImports) {
             String imports = imp.get("value").substring(1, imp.get("value").length() - 1);
-            String final_import = String.join(".", imports.split(", "));
-            importsHelper.add(final_import);
+            String completeImport = String.join(".", imports.split(", "));
+            
+            importsHelper.add(completeImport);
         }
 
         return importsHelper;
