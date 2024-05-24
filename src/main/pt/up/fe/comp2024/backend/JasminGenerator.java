@@ -426,6 +426,10 @@ public class JasminGenerator {
                 };
                 code.append(returnTypeAppend2);
                 break;
+            case "arraylength":
+                code.append(generators.apply(callInstruction.getOperands().get(0)));
+                code.append("arraylength");
+                break;
         }
 
         code.append(NL);
