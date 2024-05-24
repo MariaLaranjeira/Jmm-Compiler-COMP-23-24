@@ -70,6 +70,7 @@ public class JasminGenerator {
             code = generators.apply(ollirResult.getOllirClass());
         }
 
+        //System.out.println(code);
         return code;
     }
 
@@ -167,11 +168,11 @@ public class JasminGenerator {
         for (Element param : params) {
             switch (param.getType().toString()) {
                 case "INT32" -> paramCode.append("I");
+                case "INT32[]" -> paramCode.append("[I");
                 case "BOOLEAN" -> paramCode.append("Z");
                 case "STRING[]" -> paramCode.append("[Ljava/lang/String;");
                 case "VOID" -> paramCode.append("V");
                 case "SHORT" -> paramCode.append("S");
-                case "ARRAYREF" -> paramCode.append("[");
                 case "CLASS" -> paramCode.append("L");
                 case "STRING" -> paramCode.append("[Ljava/lang/String;");
                 default -> throw new NotImplementedException(param.getType());
@@ -188,7 +189,6 @@ public class JasminGenerator {
             case "VOID" -> code.append("V").append(NL);
             case "STRING[]" -> code.append("[Ljava/lang/String;").append(NL);
             case "SHORT" -> code.append("S").append(NL);
-            case "ARRAYREF" -> code.append("[").append(NL);
             case "INT32[]" -> code.append("[I").append(NL);
             default -> throw new NotImplementedException(returnType);
         }
@@ -207,7 +207,16 @@ public class JasminGenerator {
                     .collect(Collectors.joining(NL + TAB, TAB, NL));
 
             code.append(instCode);
+
+            if (inst.getInstType() == InstructionType.CALL) {
+                var callInst = (CallInstruction) inst;
+                if (callInst.getReturnType().getTypeOfElement() != ElementType.VOID) {
+                    code.append(TAB).append("pop").append(NL);
+                }
+            }
+
         }
+
 
 
         code.append(".end method\n");
@@ -305,7 +314,16 @@ public class JasminGenerator {
             case "NEW":
                 var tmp = callInstruction.getCaller();
                 Operand lhs = (Operand) tmp;
-                code.append("new ").append(lhs.getName()).append(NL).append("dup");
+
+                if(lhs.getType().getTypeOfElement() == ElementType.ARRAYREF) {
+                    for (var argument : callInstruction.getArguments())
+                        code.append(generators.apply(argument));
+
+                    code.append("newarray int");
+                } else {
+                    code.append("new ").append(lhs.getName()).append(NL).append("dup");
+                }
+
                 break;
             case "invokespecial":
                 var tmp2 = callInstruction.getCaller();
@@ -340,7 +358,7 @@ public class JasminGenerator {
                         case "STRING[]" -> "[Ljava/lang/String;";
                         case "VOID" -> "V";
                         case "SHORT" -> "S";
-                        case "ARRAYREF" -> "[";
+                        case "INT32[]" -> "[I";
                         default -> throw new NotImplementedException(paramType);
                     };
                     code.append(paramTypeAppend);
@@ -353,7 +371,7 @@ public class JasminGenerator {
                     case "BOOLEAN" -> "Z";
                     case "VOID" -> "V";
                     case "SHORT" -> "S";
-                    case "ARRAYREF" -> "[";
+                    case "INT32[]" -> "[I";
                     case "STRING[]" -> "[Ljava/lang/String;";
                     default -> throw new NotImplementedException(returnType);
                 };
@@ -389,7 +407,7 @@ public class JasminGenerator {
                         case "STRING[]" -> "[Ljava/lang/String;";
                         case "VOID" -> "V";
                         case "SHORT" -> "S";
-                        case "ARRAYREF" -> "[";
+                        case "INT32[]" -> "[I";
                         default -> throw new NotImplementedException(paramType);
                     };
                     code.append(paramTypeAppend);
@@ -402,7 +420,7 @@ public class JasminGenerator {
                     case "BOOLEAN" -> "Z";
                     case "VOID" -> "V";
                     case "SHORT" -> "S";
-                    case "ARRAYREF" -> "[";
+                    case "INT32[]" -> "[I";
                     case "STRING[]" -> "[Ljava/lang/String;";
                     default -> throw new NotImplementedException(returnType2);
                 };
@@ -416,34 +434,53 @@ public class JasminGenerator {
 
     private String generateAssign(AssignInstruction assign) {
         var code = new StringBuilder();
+        var lhs = assign.getDest();
+        var rhs = assign.getRhs();
 
+        if(lhs instanceof ArrayOperand aop){
+            switch (aop.getName()) {
+                case "this" -> code.append("aload_0").append(NL);
+                default -> code.append("aload ").append(currentMethod.getVarTable().get(aop.getName()).getVirtualReg()).append(NL);
+            }
 
-        // generate code for loading what's on the right
-        code.append(generators.apply(assign.getRhs()));
+            code.append(generators.apply(aop.getIndexOperands().get(0)));
+        }
+
+        if(rhs instanceof SingleOpInstruction && ((SingleOpInstruction) assign.getRhs()).getSingleOperand() instanceof ArrayOperand aop){
+
+            switch (aop.getName()) {
+                case "this" -> code.append("aload_0").append(NL);
+                default -> code.append("aload ").append(currentMethod.getVarTable().get(aop.getName()).getVirtualReg()).append(NL);
+            }
+
+            code.append(generators.apply(((ArrayOperand) ((SingleOpInstruction) assign.getRhs()).getSingleOperand()).getIndexOperands().get(0)));
+
+            code.append("iaload ").append(NL);
+
+        } else {
+            code.append(generators.apply(assign.getRhs()));
+        }
+
 
         // store value in the stack in destination
-        var lhs = assign.getDest();
-
-        if (!(lhs instanceof Operand)) {
+        if (!(lhs instanceof Operand operand)) {
             throw new NotImplementedException(lhs.getClass());
         }
 
-        var operand = (Operand) lhs;
-
-        //if (!(((Operand) lhs).getName().contains("tmp"))) {
-        //
-        //}
+        if(operand instanceof ArrayOperand){
+            return code.append("iastore").append(NL).toString();
+        }
 
         switch(operand.getType().toString()) {
             case "INT32" -> code.append("istore ");
             case "BOOLEAN" -> code.append("istore ");
             default -> code.append("astore ");
         }
+
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
-
-
         code.append(reg).append(NL);
+
 
         return code.toString();
     }
@@ -471,7 +508,7 @@ public class JasminGenerator {
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
         var operandType = operand.getType().toString();
 
-        if (operandType.contains("OBJECTREF")) {
+        if (operandType.contains("OBJECTREF") || operandType.contains("ARRAYREF")) {
             return "aload " + reg + NL;
         }
         else if (operandType.contains("THIS")) {
@@ -563,11 +600,6 @@ public class JasminGenerator {
     private  String generateGoto(GotoInstruction gotoInstruction){
         var code = new StringBuilder();
         String label = gotoInstruction.getLabel();
-
-        //switch (label) {
-        //    case "end_0" -> code.append("goto cmp_lt_0_end").append(NL);
-        //    case "endif_0" -> code.append("goto endif1").append(NL);
-        //}
         code.append("goto "+label).append(NL);
         return code.toString();
     }
