@@ -1,5 +1,6 @@
 package pt.up.fe.comp2024.optimization;
 
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
@@ -134,8 +135,8 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         String functionName = node.get("value");
         String first;
         String returnCode;
+        String nameCall;
         Type returnType = table.getReturnType(functionName);
-
         returnCode = OptUtils.toOllirType(returnType);
 
         boolean isImported = false;
@@ -143,6 +144,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         //check if first parameter is in imports
         String className = table.getClassName();
+
         for(var imported : table.getImports()){
             if (node.getChild(0).get("name").equals(imported)) {
                 isImported = true;
@@ -156,16 +158,49 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
             }
         }
 
+        //Verify if we have a this call function
+        if(node.getJmmChild(0).get("name").equals("this"))  nameCall = OptUtils.getTemp();
+        else nameCall = node.getJmmChild(0).get("name");
+
+        //Get Parameters Types, so i can know if we have a vararg
+        List<Symbol> parameters = table.getParameters(functionName);
+        int numParameters = parameters.size(); //number of parameters
+        int numParametersCallFunction = node.getNumChildren(); //num of parameters in call function
         StringBuilder computation = new StringBuilder();
         List<String> codes = new ArrayList<>();
+
         //Get the computations before the function Call
         //computations of the parameters in the function call
-        if(node.getNumChildren() > 1){
-            for (int i = 1; i < node.getNumChildren(); i++) {
-                JmmNode child = node.getChild(i);
-                OllirExprResult result = visit(child);
-                computation.append(result.getComputation());
-                codes.add(result.getCode());
+        if(numParametersCallFunction > 1){
+            for (int i = 1; i < numParametersCallFunction; i++) {
+                //If it is a vararg = array creation
+                if(numParametersCallFunction != numParameters && numParameters - 1 < i){
+                    String temp = OptUtils.getTemp();
+                    String callType = temp + ".array.i32";
+
+                    //Get computation of the vararg - array
+                    for(int j = i; j < numParametersCallFunction; j++) {
+                        JmmNode child = node.getChild(j);
+                        OllirExprResult arrayElem = visit(child);
+
+                        computation.append(arrayElem.getComputation());
+                        //assign each element of the array to the value
+                        computation.append(nameCall);
+                        computation.append("[").append(j).append(".i32").append("].i32");
+                        computation.append(" :=.i32 ").append(arrayElem.getCode()).append(END_STMT);
+                    }
+
+                    //Add code
+                    codes.add(callType);
+                    break;
+                }
+
+                else{
+                    JmmNode child = node.getChild(i);
+                    OllirExprResult result = visit(child);
+                    computation.append(result.getComputation());
+                    codes.add(result.getCode());
+                }
             }
         }
 

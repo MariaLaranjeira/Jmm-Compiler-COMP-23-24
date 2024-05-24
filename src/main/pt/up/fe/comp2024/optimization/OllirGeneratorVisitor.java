@@ -105,7 +105,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         code.append(L_BRACKET);
 
         for (var child : node.getChildren()) {
-                if(child.getKind().equals("VarStmt")){
+            if(child.getKind().equals("VarStmt")){
                 //VarDecl
                 var result = visit(child);
                 code.append(result);
@@ -166,6 +166,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
             //Parameters
             List<Symbol> parameters = table.getParameters(currentMethod);
+
             if (!parameters.isEmpty()) {
                 List<String> paramCodes = new ArrayList<>();
                 for (Symbol param : parameters) {
@@ -207,18 +208,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         code.append("ret");
         code.append(OptUtils.toOllirType(retType));
         code.append(SPACE);
-
-        JmmNode returnChild = node.getChildren().get(0);
-
-        //if child is literal show value
-        if (returnChild.getKind().equals("IntegerLiteral") || returnChild.getKind().equals("BooleanLiteral")) {
-            code.append(returnChild.get("value")).append(OptUtils.toOllirType(retType));
-        }
-        //if child is variable show name
-        else if (returnChild.getKind().equals("VarRefExpr")) {
-            code.append(returnChild.get("name")).append(OptUtils.toOllirType(retType));
-        }
-
+        code.append(expr.getCode());
         code.append(";\n");
 
         return code.toString();
