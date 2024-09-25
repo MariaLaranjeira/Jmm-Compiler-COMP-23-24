@@ -9,7 +9,3 @@
 - José Costa - 33.33 %
 - Manuel Silva - 33.33 %
 - Maria Laranjeira - 33.33 %
-
-## Self-Assessment
-
-- We think our project deserves a 17 out of 20.
